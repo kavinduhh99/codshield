@@ -44,8 +44,9 @@ export async function POST(req: Request) {
       verificationToken,
     });
 
-    // We hardcode localhost for dev. In prod this should be dynamic.
-    const verifyLink = `http://localhost:3000/api/auth/verify?token=${verificationToken}`;
+    // Generate dynamic verification link using NEXTAUTH_URL or fallback to localhost for development
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const verifyLink = `${baseUrl.replace(/\/$/, "")}/api/auth/verify?token=${verificationToken}`;
     console.log(`[AUTH] Verification Link for ${email}: ${verifyLink}`);
 
     /*
