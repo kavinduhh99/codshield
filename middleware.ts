@@ -26,7 +26,7 @@ export default withAuth(
 
     // Subscription Check Lock
     if (token?.subEnd) {
-      const expirationDate = new Date(token.subEnd as string);
+      const expirationDate = new Date(token.subEnd as any);
       const isExpired = expirationDate < new Date();
 
       if (isExpired) {

@@ -53,6 +53,7 @@ export async function POST(req: Request) {
      * We use the modern BrevoClient (v4+) which is more reliable than legacy SMTP.
      * Ensure BREVO_API_KEY and BREVO_SENDER_EMAIL are set in .env.local.
      */
+    try {
       const emailRes = await brevo.transactionalEmails.sendTransacEmail({
         subject: 'Verify your CODShield Account',
         sender: { 
