@@ -50,29 +50,34 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 overflow-y-auto absolute inset-0 w-full">
+    <div className="flex min-h-screen flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 bg-slate-950 overflow-y-auto font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md flex-shrink-0">
         <div className="flex justify-center">
-          <ShieldAlert className="h-12 w-12 text-blue-600" />
+          <div className="p-3 bg-indigo-600/10 rounded-2xl border border-indigo-500/20">
+            <ShieldAlert className="h-10 w-10 text-indigo-500" />
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-          Create your business account
+        <h2 className="mt-6 text-center text-3xl font-extrabold tracking-tight text-white">
+          Join CODShield
         </h2>
+        <p className="mt-2 text-center text-sm text-slate-400">
+          Secure your eCommerce business from RTO losses today.
+        </p>
       </div>
 
       <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md flex-shrink-0">
-        <div className="bg-white px-4 py-8 shadow sm:rounded-lg sm:px-10">
+        <div className="bg-slate-900/50 border border-slate-800 p-8 shadow-2xl rounded-3xl backdrop-blur-sm px-4 sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-700">{error}</p>
+              <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4">
+                <p className="text-sm text-red-400">{error}</p>
               </div>
             )}
 
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-medium leading-6 text-slate-300"
               >
                 Full Name
               </label>
@@ -82,7 +87,7 @@ export default function RegisterPage() {
                   name="name"
                   type="text"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                  className="block w-full rounded-xl border-0 py-2.5 bg-slate-900 text-white shadow-sm ring-1 ring-inset ring-slate-800 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 px-4 transition-all"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
@@ -94,7 +99,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-medium leading-6 text-slate-300"
               >
                 Email address
               </label>
@@ -105,7 +110,7 @@ export default function RegisterPage() {
                   type="email"
                   autoComplete="email"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                  className="block w-full rounded-xl border-0 py-2.5 bg-slate-900 text-white shadow-sm ring-1 ring-inset ring-slate-800 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 px-4 transition-all"
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
@@ -117,7 +122,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="businessName"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-medium leading-6 text-slate-300"
               >
                 Business Name
               </label>
@@ -127,7 +132,7 @@ export default function RegisterPage() {
                   name="businessName"
                   type="text"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                  className="block w-full rounded-xl border-0 py-2.5 bg-slate-900 text-white shadow-sm ring-1 ring-inset ring-slate-800 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 px-4 transition-all"
                   value={formData.businessName}
                   onChange={(e) =>
                     setFormData({ ...formData, businessName: e.target.value })
@@ -139,7 +144,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="phone"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-medium leading-6 text-slate-300"
               >
                 Phone Number (Optional)
               </label>
@@ -148,7 +153,7 @@ export default function RegisterPage() {
                   id="phone"
                   name="phone"
                   type="tel"
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                  className="block w-full rounded-xl border-0 py-2.5 bg-slate-900 text-white shadow-sm ring-1 ring-inset ring-slate-800 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 px-4 transition-all"
                   value={formData.phone}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
@@ -160,7 +165,7 @@ export default function RegisterPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium leading-6 text-gray-900"
+                className="block text-sm font-medium leading-6 text-slate-300"
               >
                 Password
               </label>
@@ -171,7 +176,7 @@ export default function RegisterPage() {
                   type="password"
                   autoComplete="new-password"
                   required
-                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6 px-3"
+                  className="block w-full rounded-xl border-0 py-2.5 bg-slate-900 text-white shadow-sm ring-1 ring-inset ring-slate-800 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-500 sm:text-sm sm:leading-6 px-4 transition-all"
                   value={formData.password}
                   onChange={(e) =>
                     setFormData({ ...formData, password: e.target.value })
@@ -184,7 +189,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex w-full justify-center rounded-md bg-blue-600 px-3 py-1.5 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex w-full justify-center rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold leading-6 text-white shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {loading ? "Registering..." : "Create Account"}
               </button>
@@ -192,11 +197,11 @@ export default function RegisterPage() {
           </form>
         </div>
 
-        <p className="mt-10 mb-10 text-center text-sm text-gray-500">
+        <p className="mt-10 mb-10 text-center text-sm text-slate-400">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-semibold leading-6 text-blue-600 hover:text-blue-500"
+            className="font-semibold leading-6 text-indigo-400 hover:text-indigo-300 transition-colors"
           >
             Sign in
           </Link>

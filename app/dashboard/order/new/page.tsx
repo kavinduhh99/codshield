@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useSession } from "next-auth/react";
-import { ShieldAlert, Phone, MapPin, User as UserIcon, Loader2, UploadCloud, Download, Building } from "lucide-react";
+import { ShieldAlert, AlertTriangle, Phone, MapPin, User as UserIcon, Loader2, UploadCloud, Download, Building } from "lucide-react";
 import * as xlsx from "xlsx";
 
 export default function AddOrderPage() {
@@ -30,6 +30,8 @@ export default function AddOrderPage() {
 
   // Risk Engine State
   const [riskScore, setRiskScore] = useState<number | null>(null);
+  const [riskLevel, setRiskLevel] = useState<"low" | "medium" | "high" | null>(null);
+  const [showRiskModal, setShowRiskModal] = useState(false);
   const [riskSuccessOrders, setRiskSuccessOrders] = useState<number>(0);
   const [riskFailedOrders, setRiskFailedOrders] = useState<number>(0);
   const [checkingRisk, setCheckingRisk] = useState(false);
@@ -54,6 +56,7 @@ export default function AddOrderPage() {
         if (res.ok) {
           const data = await res.json();
           setRiskScore(data.riskScore);
+          setRiskLevel(data.riskLevel ?? "low");
           setRiskSuccessOrders(data.successOrders ?? 0);
           setRiskFailedOrders(data.failedOrders ?? 0);
         }
@@ -69,17 +72,17 @@ export default function AddOrderPage() {
         checkRisk(formData.phone, formData.phone2);
       } else {
         setRiskScore(null);
+        setRiskLevel(null);
       }
     }, 500);
 
     return () => clearTimeout(timeoutId);
   }, [formData.phone, formData.phone2]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  // Extracted so both handleSubmit (low-risk path) and the modal's
+  // 'Proceed Anyway' button can invoke the same API call.
+  const saveOrder = async () => {
     setSubmitting(true);
-
     try {
       const res = await fetch("/api/order", {
         method: "POST",
@@ -97,13 +100,26 @@ export default function AddOrderPage() {
         return;
       }
 
-      // Success, route back to history
       router.push("/dashboard/order/history");
       router.refresh();
     } catch (err) {
       setError("Server error while submitting order.");
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    // High-risk path: show modal and let the user decide. saveOrder() is
+    // called from the modal's 'Proceed Anyway' button instead.
+    if (riskLevel === "high") {
+      setShowRiskModal(true);
+      return;
+    }
+
+    await saveOrder();
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,28 +207,19 @@ export default function AddOrderPage() {
       </span>
     );
 
-    if (riskScore >= 100) {
+    if (riskLevel === "high") {
       return (
         <span className="inline-flex items-center flex-wrap gap-y-1 rounded-full bg-red-100 dark:bg-red-900/30 px-3 py-1 text-xs font-medium text-red-800 dark:text-red-300">
-          <ShieldAlert className="mr-1.5 h-4 w-4" /> High Risk ({riskScore})
+          <ShieldAlert className="mr-1.5 h-4 w-4" /> High Risk ({riskScore}%)
           {statsRow}
         </span>
       );
     }
 
-    if (riskScore >= 50) {
+    if (riskLevel === "medium") {
       return (
         <span className="inline-flex items-center flex-wrap gap-y-1 rounded-full bg-orange-100 dark:bg-orange-900/30 px-3 py-1 text-xs font-medium text-orange-800 dark:text-orange-300">
-          <ShieldAlert className="mr-1.5 h-4 w-4" /> Elevated Risk ({riskScore})
-          {statsRow}
-        </span>
-      );
-    }
-
-    if (riskScore >= 25) {
-      return (
-        <span className="inline-flex items-center flex-wrap gap-y-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-3 py-1 text-xs font-medium text-yellow-800 dark:text-yellow-300">
-          <ShieldAlert className="mr-1.5 h-4 w-4" /> Moderate Risk ({riskScore})
+          <ShieldAlert className="mr-1.5 h-4 w-4" /> Elevated Risk ({riskScore}%)
           {statsRow}
         </span>
       );
@@ -220,7 +227,7 @@ export default function AddOrderPage() {
 
     return (
       <span className="inline-flex items-center flex-wrap gap-y-1 rounded-full bg-green-100 dark:bg-green-900/30 px-3 py-1 text-xs font-medium text-green-800 dark:text-green-300">
-        <ShieldAlert className="mr-1.5 h-4 w-4" /> Safe Record ({riskScore})
+        <ShieldAlert className="mr-1.5 h-4 w-4" /> Safe Record ({riskScore}%)
         {statsRow}
       </span>
     );
@@ -443,7 +450,7 @@ export default function AddOrderPage() {
                     <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-gray-700">
                       <button
                         type="submit"
-                        disabled={submitting || checkingRisk || (riskScore !== null && riskScore >= 100)}
+                        disabled={submitting || checkingRisk}
                         className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {submitting ? "Saving..." : "Save Order"}
@@ -456,6 +463,71 @@ export default function AddOrderPage() {
           </div>
         </main>
       </div>
+                  {/* ── High-Risk Confirmation Modal ── */}
+      {showRiskModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowRiskModal(false); }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-gray-900 border border-gray-700/80 shadow-2xl p-6 space-y-5"
+            style={{ animation: "riskModalIn 0.2s ease-out" }}
+          >
+            <style>{`
+              @keyframes riskModalIn {
+                from { opacity: 0; transform: scale(0.95) translateY(-8px); }
+                to   { opacity: 1; transform: scale(1)    translateY(0); }
+              }
+            `}</style>
+
+            {/* Header */}
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 p-2.5 rounded-xl bg-red-900/40 border border-red-800/50">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-white leading-snug">
+                  High-Risk Customer Detected
+                </h3>
+                <p className="mt-1 text-sm text-gray-400 leading-relaxed">
+                  This customer&apos;s return history suggests a high likelihood of order refusal. Proceeding may result in a financial loss.
+                </p>
+              </div>
+            </div>
+
+            {/* Risk stats pill */}
+            <div className="flex items-center gap-3 rounded-xl bg-red-950/40 border border-red-900/50 px-4 py-3">
+              <ShieldAlert className="h-5 w-5 text-red-400 flex-shrink-0" />
+              <p className="text-sm text-red-300">
+                Risk Score:{" "}
+                <span className="font-bold text-white">{riskScore}%</span>
+                <span className="mx-2 text-red-800/60">&middot;</span>
+                {riskFailedOrders} returned
+                <span className="mx-2 text-red-800/60">&middot;</span>
+                {riskSuccessOrders} delivered
+              </p>
+            </div>
+
+            <div className="border-t border-gray-700/60" />
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowRiskModal(false)}
+                className="px-4 py-2 text-sm font-medium rounded-xl text-gray-300 bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => { setShowRiskModal(false); await saveOrder(); }}
+                className="px-4 py-2 text-sm font-medium rounded-xl text-white bg-red-600 hover:bg-red-500 border border-red-500/80 transition-colors shadow-lg shadow-red-900/30"
+              >
+                Proceed Anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

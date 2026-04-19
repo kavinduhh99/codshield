@@ -8,7 +8,7 @@ import { ShieldAlert, Phone, Loader2, Info, CheckCircle2, XCircle } from "lucide
 export default function RiskCheckerPage() {
   const { data: session, status } = useSession();
   const [phone, setPhone] = useState("");
-  const [riskData, setRiskData] = useState<{ score: number; failedOrders: number; successOrders: number } | null>(null);
+  const [riskData, setRiskData] = useState<{ score: number; riskLevel: "low" | "medium" | "high"; failedOrders: number; successOrders: number } | null>(null);
   const [checkingRisk, setCheckingRisk] = useState(false);
 
   useEffect(() => {
@@ -30,6 +30,7 @@ export default function RiskCheckerPage() {
           const data = await res.json();
           setRiskData({
             score: data.riskScore ?? 0,
+            riskLevel: data.riskLevel ?? "low",
             failedOrders: data.failedOrders ?? 0,
             successOrders: data.successOrders ?? 0,
           });
@@ -93,7 +94,7 @@ export default function RiskCheckerPage() {
         </div>
     );
 
-    if (riskData.score >= 100) {
+    if (riskData.riskLevel === "high") {
         return (
             <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/50 w-full">
                 <div className="p-4 bg-red-100 dark:bg-red-900/50 rounded-full mb-6">
@@ -102,14 +103,14 @@ export default function RiskCheckerPage() {
                 <h2 className="text-3xl font-bold text-red-800 dark:text-red-300 mb-2">High Risk Detected</h2>
                 <div className="flex items-center space-x-2 text-red-700 dark:text-red-400 font-medium">
                     <Info className="h-5 w-5" />
-                    <p>Warning Level: {riskData.score}</p>
+                    <p>Risk Score: {riskData.score}%</p>
                 </div>
                 <StatsRow />
             </div>
         );
     }
 
-    if (riskData.score >= 50) {
+    if (riskData.riskLevel === "medium") {
         return (
             <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/50 w-full">
                 <div className="p-4 bg-orange-100 dark:bg-orange-900/50 rounded-full mb-6">
@@ -118,29 +119,14 @@ export default function RiskCheckerPage() {
                 <h2 className="text-3xl font-bold text-orange-800 dark:text-orange-300 mb-2">Elevated Risk</h2>
                 <div className="flex items-center space-x-2 text-orange-700 dark:text-orange-400 font-medium">
                     <Info className="h-5 w-5" />
-                    <p>Warning Level: {riskData.score}</p>
+                    <p>Risk Score: {riskData.score}%</p>
                 </div>
                 <StatsRow />
             </div>
         );
     }
 
-    if (riskData.score >= 25) {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/50 w-full">
-                <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-full mb-6">
-                   <ShieldAlert className="h-16 w-16 text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <h2 className="text-3xl font-bold text-yellow-800 dark:text-yellow-300 mb-2">Moderate Risk</h2>
-                <div className="flex items-center space-x-2 text-yellow-700 dark:text-yellow-400 font-medium">
-                    <Info className="h-5 w-5" />
-                    <p>Warning Level: {riskData.score}</p>
-                </div>
-                <StatsRow />
-            </div>
-        );
-    }
-
+    // riskLevel === 'low'
     return (
         <div className="flex flex-col items-center justify-center p-12 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900/50 w-full">
             <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-full mb-6">
@@ -149,7 +135,7 @@ export default function RiskCheckerPage() {
             <h2 className="text-3xl font-bold text-green-800 dark:text-green-300 mb-2">Safe Intelligence Record</h2>
             <div className="flex items-center space-x-2 text-green-700 dark:text-green-400 font-medium">
                 <Info className="h-5 w-5" />
-                <p>Status: Clear (Score: {riskData.score})</p>
+                <p>Risk Score: {riskData.score}% — Clear</p>
             </div>
             <StatsRow />
         </div>

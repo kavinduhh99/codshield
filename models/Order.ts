@@ -8,6 +8,7 @@ export interface IOrder extends Document {
   address: string;
   city: string;
   status: "pending" | "delivered" | "returned";
+  returnReason?: "Customer Refused" | "Courier Issue" | "Other";
   riskScore: number;
   createdAt: Date;
   updatedAt: Date;
@@ -45,6 +46,11 @@ const OrderSchema: Schema<IOrder> = new Schema(
       type: String,
       enum: ["pending", "delivered", "returned"],
       default: "pending",
+    },
+    returnReason: {
+      type: String,
+      enum: ["Customer Refused", "Courier Issue", "Other"],
+      required: false,
     },
     riskScore: {
       type: Number,

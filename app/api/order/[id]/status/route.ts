@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
-import Order from "@/models/Order";
+import Order, { IOrder } from "@/models/Order";
 import Intelligence from "@/models/Intelligence";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -13,7 +13,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { status } = await req.json();
+    const { status, returnReason } = await req.json();
     const { id } = await params;
 
     if (!status || !id) {
@@ -26,6 +26,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     await connectDB();
 
+    // Shared phone normalizer — must match format used in check-risk/route.ts
+    const normalizePhone = (p: string) => {
+      let cleaned = p.replace(/[^0-9+]/g, "");
+      if (cleaned.startsWith("0")) cleaned = "+94" + cleaned.slice(1);
+      else if (cleaned.startsWith("94") && cleaned.length >= 11) cleaned = "+" + cleaned;
+      return cleaned;
+    };
+
     // Verify order exists and belongs to user
     const order = await Order.findOne({ _id: id, userId: session.user.id });
 
@@ -36,9 +44,29 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // Capture previous status
     const previousStatus = order.status;
 
-    // Update status
+    // Update status and capture optional return reason
     order.status = status;
+    if (status === "returned" && returnReason) {
+      order.returnReason = returnReason as IOrder["returnReason"];
+    }
     await order.save();
+
+    // ── Total Orders Counter ──
+    // Increment totalOrders the first time an order leaves 'pending'.
+    // This keeps the Intelligence denominator accurate for the weighted risk formula.
+    if (previousStatus === "pending") {
+      const settlementPhones: string[] = [];
+      if (order.phone) settlementPhones.push(order.phone);
+      if (order.phone2) settlementPhones.push(order.phone2 as string);
+      for (const phoneStr of settlementPhones) {
+        const normalizedPhone = normalizePhone(phoneStr);
+        await Intelligence.findOneAndUpdate(
+          { phone: normalizedPhone },
+          { $inc: { totalOrders: 1 } },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+      }
+    }
 
     // ── Intelligence Feedback Loop ──
     // We ONLY increment failedOrders when an order transitions TO "returned" for the first time.
@@ -63,17 +91,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     //    fraudulent customer through) results in real financial loss for the merchant.
     //    Penalties are permanent by design, and can only be manually cleared by admins.
     if (status === "returned" && previousStatus !== "returned") {
-      const phonesToUpdate = [];
+      const phonesToUpdate: string[] = [];
       if (order.phone) phonesToUpdate.push(order.phone);
-      if (order.phone2) phonesToUpdate.push(order.phone2);
-
-      // Shared normalizer — must match the format used by check-risk/route.ts
-      const normalizePhone = (p: string) => {
-        let cleaned = p.replace(/[^0-9+]/g, "");
-        if (cleaned.startsWith("0")) cleaned = "+94" + cleaned.slice(1);
-        else if (cleaned.startsWith("94") && cleaned.length >= 11) cleaned = "+" + cleaned;
-        return cleaned;
-      };
+      if (order.phone2) phonesToUpdate.push(order.phone2 as string);
 
       for (const phoneStr of phonesToUpdate) {
         if (!phoneStr) continue;
@@ -94,16 +114,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     // for each associated phone. This gives sellers a balanced view: a customer with
     // 10 successful deliveries and 1 return is very different from one with 1 return and 0 successes.
     if (status === "delivered" && previousStatus !== "delivered") {
-      const phonesToUpdate = [];
+      const phonesToUpdate: string[] = [];
       if (order.phone) phonesToUpdate.push(order.phone);
-      if (order.phone2) phonesToUpdate.push(order.phone2);
-
-      const normalizePhone = (p: string) => {
-        let cleaned = p.replace(/[^0-9+]/g, "");
-        if (cleaned.startsWith("0")) cleaned = "+94" + cleaned.slice(1);
-        else if (cleaned.startsWith("94") && cleaned.length >= 11) cleaned = "+" + cleaned;
-        return cleaned;
-      };
+      if (order.phone2) phonesToUpdate.push(order.phone2 as string);
 
       for (const phoneStr of phonesToUpdate) {
         if (!phoneStr) continue;

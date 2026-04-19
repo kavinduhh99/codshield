@@ -8,11 +8,12 @@ export interface IUser extends Document {
   phone?: string;
   role: "admin" | "business";
   subscription: {
-    plan: "free" | "pro" | "enterprise";
+    plan: "free" | "pro";
     startDate: Date;
-    endDate: Date;
+    endDate?: Date;
     isActive: boolean;
   };
+  paymentStatus: "none" | "pending_verification";
   isEmailVerified: boolean;
   verificationToken?: string;
   createdAt: Date;
@@ -52,7 +53,7 @@ const UserSchema: Schema<IUser> = new Schema(
     subscription: {
       plan: {
         type: String,
-        enum: ["free", "pro", "enterprise"],
+        enum: ["free", "pro"],
         default: "free",
       },
       startDate: {
@@ -66,6 +67,11 @@ const UserSchema: Schema<IUser> = new Schema(
         type: Boolean,
         default: false,
       },
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["none", "pending_verification"],
+      default: "none",
     },
     isEmailVerified: {
       type: Boolean,
