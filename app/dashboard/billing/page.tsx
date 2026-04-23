@@ -67,7 +67,7 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-slate-950 overflow-x-hidden">
       <Sidebar
         businessName={session?.user?.businessName}
         userName={session?.user?.name}

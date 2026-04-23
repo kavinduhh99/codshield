@@ -27,7 +27,7 @@ export default async function AdminUsersPage() {
   }));
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-950 text-gray-300">
+    <div className="flex min-h-screen w-full bg-gray-950 text-gray-300 overflow-x-hidden">
       <Sidebar
         businessName={(session.user as any)?.businessName}
         userName={session.user?.name}

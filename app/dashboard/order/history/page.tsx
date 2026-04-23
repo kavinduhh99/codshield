@@ -63,7 +63,7 @@ export default async function OrderHistoryPage() {
   }));
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-slate-950 font-sans">
+    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-slate-950 font-sans overflow-x-hidden">
       <Sidebar
         businessName={(session.user as any)?.businessName}
         userName={session.user?.name}
@@ -80,7 +80,7 @@ export default async function OrderHistoryPage() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 mt-8">
               {/* Data Table */}
               <div className="overflow-x-auto bg-white dark:bg-slate-900 shadow sm:rounded-lg border border-transparent dark:border-slate-800">
-                <ul role="list" className="divide-y divide-gray-200 dark:divide-slate-800 min-w-[600px] md:min-w-full">
+                <ul role="list" className="divide-y divide-gray-200 dark:divide-slate-800 w-full">
                   {orders.length === 0 ? (
                     <li className="px-6 py-12 text-center text-gray-500 dark:text-slate-400">
                       <Package className="mx-auto h-12 w-12 text-gray-300 dark:text-slate-600 mb-4" />
@@ -89,7 +89,7 @@ export default async function OrderHistoryPage() {
                   ) : (
                     orders.map((order: any) => (
                       <li key={order._id} className="p-6 hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div className="flex items-center space-x-4 max-w-md">
                             <div className="flex-shrink-0">
                               {getStatusIcon(order.status)}
@@ -111,7 +111,7 @@ export default async function OrderHistoryPage() {
                             </div>
                           </div>
                           
-                          <div className="flex flex-col items-end space-y-2">
+                          <div className="flex flex-col sm:items-end space-y-2">
                              <RiskBadge score={order.riskScore} />
                              <span className="text-xs text-gray-400 dark:text-slate-500">
                                {new Date(order.createdAt).toLocaleDateString()}
