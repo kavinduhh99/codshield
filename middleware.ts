@@ -7,37 +7,48 @@ export default withAuth(
     const path = req.nextUrl.pathname;
 
     // ── Email Verification Guard ──
-    // Exclude the verification routes themselves from the guard to prevent infinite loops.
     const isVerificationRoute = path.startsWith("/verify-email") || path.startsWith("/api/auth/verify");
+    const isPublicApi = path.startsWith("/api/auth") || path.startsWith("/api/register");
     
-    // IMPORTANT: We check !== true (not === false) because legacy users created before
-    // this feature was added will have isEmailVerified = undefined in their JWT token.
     if (token && token.isEmailVerified !== true && !isVerificationRoute) {
-      // Strictly protect dashboard, admin, and sensitive order APIs
-      if (path.startsWith("/dashboard") || path.startsWith("/admin") || path.startsWith("/api/order") || path === "/") {
+      // Strictly protect dashboard, admin, and all non-public APIs
+      if (path.startsWith("/dashboard") || path.startsWith("/admin") || (path.startsWith("/api") && !isPublicApi) || path === "/") {
         return NextResponse.redirect(new URL("/verify-email", req.url));
       }
     }
 
-    // Admins are exempt from lock
+    // Admins are exempt from status/subscription locks
     if (token?.role === "admin") {
       return NextResponse.next();
     }
 
-    // Subscription Check Lock
+    // Account Status Guard (Suspended)
+    if (token?.status === "suspended") {
+      const isBillingPage = path === "/dashboard/billing";
+      const isApiMutation = path.startsWith("/api") && !isPublicApi && req.method !== "GET" && req.method !== "OPTIONS";
+      
+      if (((path.startsWith("/dashboard") || path === "/") && !isBillingPage) || isApiMutation) {
+        if (path.startsWith("/api")) {
+          return NextResponse.json({ message: "Account Suspended", code: "SUSPENDED" }, { status: 403 });
+        }
+        return NextResponse.redirect(new URL("/dashboard/billing", req.url));
+      }
+    }
+
+    // Subscription Check Lock (Expired)
     if (token?.subEnd) {
       const expirationDate = new Date(token.subEnd as any);
       const isExpired = expirationDate < new Date();
 
       if (isExpired) {
-        // Deny access to order creation and bulk ingestion when expired
-        const restrictedPaths = ["/dashboard/order/new", "/api/order/bulk"];
-        const isRestrictedApiMutation = path.startsWith("/api/order") && req.method !== "GET" && req.method !== "OPTIONS";
+        const isDashboardPath = path.startsWith("/dashboard");
+        const isBillingPage = path === "/dashboard/billing";
+        const isApiMutation = path.startsWith("/api") && !isPublicApi && req.method !== "GET" && req.method !== "OPTIONS";
         
-        const shouldRestrict = restrictedPaths.some(p => path.startsWith(p)) || isRestrictedApiMutation;
-
-        if (shouldRestrict) {
-          // If it's an API route strictly expecting JSON, redirect to billing, which fulfills the user requirement.
+        if ((isDashboardPath && !isBillingPage) || isApiMutation) {
+          if (path.startsWith("/api")) {
+            return NextResponse.json({ message: "Subscription Expired", code: "EXPIRED" }, { status: 403 });
+          }
           return NextResponse.redirect(new URL("/dashboard/billing", req.url));
         }
       }
@@ -49,6 +60,9 @@ export default withAuth(
     callbacks: {
       authorized: ({ req, token }) => {
         const path = req.nextUrl.pathname;
+        const isPublicApi = path.startsWith("/api/auth") || path.startsWith("/api/register");
+
+        if (isPublicApi) return true;
 
         // Route protection: If path starts with /admin, ensure role is admin safely
         if (path.startsWith("/admin")) {
@@ -64,5 +78,5 @@ export default withAuth(
 
 // Define regions the middleware applies to
 export const config = {
-  matcher: ["/", "/admin/:path*", "/dashboard/:path*", "/order", "/customers", "/settings", "/api/order/:path*"],
+  matcher: ["/", "/admin/:path*", "/dashboard/:path*", "/settings", "/api/:path*"],
 };

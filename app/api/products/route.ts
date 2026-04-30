@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
 import mongoose from "mongoose";
+import { checkSubscription } from "@/lib/subscription";
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,17 +25,23 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const { authorized, response, session } = await checkSubscription();
+    if (!authorized) return response;
 
     await dbConnect();
     const body = await req.json();
+    const { name, sku, category, costPrice, sellingPrice, stock, lowStockAlert, active } = body;
 
     const newProduct = await Product.create({
-      ...body,
-      userId: new mongoose.Types.ObjectId(session.user.id),
+      name,
+      sku,
+      category: category || "General",
+      costPrice: costPrice || 0,
+      sellingPrice: sellingPrice || 0,
+      stock: stock || 0,
+      lowStockAlert: lowStockAlert || 5,
+      active: active !== undefined ? active : true,
+      userId: new mongoose.Types.ObjectId((session as any).user.id),
     });
 
     return NextResponse.json(newProduct, { status: 201 });

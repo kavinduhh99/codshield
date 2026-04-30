@@ -38,9 +38,10 @@ export const authOptions: NextAuthOptions = {
           role: user.role ? user.role.toLowerCase() : "business",
           businessName: user.businessName,
           subEnd: user.subscription?.endDate,
+          plan: user.subscription?.plan,
+          status: user.status,
           isEmailVerified: user.isEmailVerified,
           createdAt: user.createdAt,
-          paymentStatus: user.paymentStatus,
         };
       },
     }),
@@ -55,11 +56,10 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.businessName = user.businessName;
         token.subEnd = user.subEnd;
-        // Stamp the verified flag from the DB record at login time.
-        // If the field doesn't exist yet (legacy user), this will be undefined.
+        token.plan = user.plan;
+        token.status = user.status;
         token.isEmailVerified = user.isEmailVerified;
         token.createdAt = user.createdAt;
-        token.paymentStatus = user.paymentStatus;
       }
 
       // ── Session refresh or explicit update() call from frontend ──
@@ -68,15 +68,16 @@ export const authOptions: NextAuthOptions = {
       // their next request in any tab will get the updated token without needing
       // them to sign out. It also heals legacy tokens where the field was undefined.
       await connectDB();
-      const dbUser = await User.findById(token.sub).select("isEmailVerified role subscription createdAt paymentStatus");
+      const dbUser = await User.findById(token.sub).select("isEmailVerified role subscription createdAt status");
       if (dbUser) {
         token.isEmailVerified = dbUser.isEmailVerified ?? false;
         token.createdAt = dbUser.createdAt;
-        token.paymentStatus = dbUser.paymentStatus;
+        token.status = dbUser.status;
         // On trigger=update, also refresh other mutable claims
         if (trigger === "update") {
           token.role = dbUser.role;
           token.subEnd = dbUser.subscription?.endDate;
+          token.plan = dbUser.subscription?.plan;
         }
       }
 
@@ -88,9 +89,10 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
         session.user.businessName = token.businessName as string;
         session.user.subEnd = token.subEnd as Date | undefined;
+        session.user.plan = token.plan as string;
+        session.user.status = token.status as string;
         session.user.isEmailVerified = token.isEmailVerified as boolean;
         session.user.createdAt = token.createdAt as Date;
-        session.user.paymentStatus = token.paymentStatus as string;
       }
       return session;
     },

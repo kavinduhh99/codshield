@@ -12,6 +12,20 @@ export async function GET() {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
+    // ── Access Guard ──────────────────────────────────────────────────────────
+    const isSuspended = (session.user as any).status === "suspended";
+    const isExpiredTrial = 
+      (session.user as any).plan === "Free Trial" && 
+      (session.user as any).subEnd && 
+      new Date((session.user as any).subEnd) < new Date();
+
+    if (isSuspended || isExpiredTrial) {
+      return NextResponse.json({ 
+        message: "Access Restricted", 
+        code: isSuspended ? "SUSPENDED" : "TRIAL_EXPIRED" 
+      }, { status: 403 });
+    }
+
     await dbConnect();
     const userId = session.user.id;
 

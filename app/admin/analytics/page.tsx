@@ -1,14 +1,29 @@
-import { Sidebar } from "@/components/layout/Sidebar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
+import { Sidebar } from "@/components/layout/Sidebar";
 import User from "@/models/User";
 import Order from "@/models/Order";
-import Intelligence from "@/models/Intelligence";
+import Payment from "@/models/Payment";
 import { redirect } from "next/navigation";
-import { Users, Package, ShieldAlert, DollarSign, TrendingUp, Search, ArrowUpRight } from "lucide-react";
+import { 
+  Activity, 
+  Users, 
+  TrendingUp, 
+  CreditCard, 
+  AlertTriangle, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Package,
+  Building
+} from "lucide-react";
 
-export default async function AdminAnalytics() {
+import { normalizePlan } from "@/lib/subscription";
+
+export default async function AdminAnalyticsPage() {
   const session = await getServerSession(authOptions);
 
   if (!session || (session.user as any)?.role !== "admin") {
@@ -17,179 +32,179 @@ export default async function AdminAnalytics() {
 
   await connectDB();
 
-  // Fetch real metrics from DB
-  const [totalUsers, totalOrders, highRiskDetected] = await Promise.all([
+  const [
+    totalUsers,
+    activeUsers,
+    suspendedUsers,
+    trialUsers,
+    paidUsers,
+    totalOrders,
+    allPayments,
+    recentSignups,
+    allOrders
+  ] = await Promise.all([
     User.countDocuments({ role: "business" }),
+    User.countDocuments({ role: "business", status: "active" }),
+    User.countDocuments({ role: "business", status: "suspended" }),
+    User.countDocuments({ role: "business", "subscription.plan": { $in: ["Free Trial", "free", "trial"] } }),
+    User.countDocuments({ role: "business", "subscription.plan": { $nin: ["Free Trial", "free", "trial", null] } }),
     Order.countDocuments(),
-    Intelligence.countDocuments({
-      $or: [{ failedOrders: { $gt: 2 } }, { isBlacklisted: true }],
-    }),
+    Payment.find({ status: "paid" }).lean(),
+    User.find({ role: "business" }).sort({ createdAt: -1 }).limit(5).lean(),
+    Order.find().select("userId status").lean(),
   ]);
 
-  // Dummy data for revenue and recent searchers
-  const totalRevenue = 12450.00;
-  const recentSearchers = [
-    { id: "1", name: "TechFlow Solutions", searches: 145, city: "Colombo", riskHandled: "High" },
-    { id: "2", name: "GreenGrocers Inc", searches: 89, city: "Kandy", riskHandled: "Medium" },
-    { id: "3", name: "Urban Styles", searches: 67, city: "Galle", riskHandled: "Low" },
-    { id: "4", name: "Swift Delivery Co", searches: 52, city: "Negombo", riskHandled: "Low" },
-    { id: "5", name: "Aero Logistics", searches: 41, city: "Jaffna", riskHandled: "High" },
-  ];
+  // Revenue calc
+  const totalRevenue = allPayments.reduce((acc: number, p: any) => acc + p.amount, 0);
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthlyRevenue = allPayments
+    .filter((p: any) => new Date(p.paymentDate || p.createdAt) >= startOfMonth)
+    .reduce((acc: number, p: any) => acc + p.amount, 0);
+
+  // Business return rates
+  const userOrderStats: Record<string, { total: number; returned: number }> = {};
+  allOrders.forEach((o: any) => {
+    const uid = o.userId.toString();
+    if (!userOrderStats[uid]) userOrderStats[uid] = { total: 0, returned: 0 };
+    userOrderStats[uid].total++;
+    if (o.status === 'returned') userOrderStats[uid].returned++;
+  });
+
+  const highReturnBusinesses = Object.entries(userOrderStats)
+    .map(([uid, stats]) => ({
+      userId: uid,
+      returnRate: stats.total > 0 ? (stats.returned / stats.total) * 100 : 0,
+      totalOrders: stats.total,
+      returnedOrders: stats.returned,
+    }))
+    .filter(b => b.totalOrders >= 5 && b.returnRate > 20)
+    .sort((a, b) => b.returnRate - a.returnRate)
+    .slice(0, 5);
+  
+  // Resolve business names for high return list
+  const highReturnDetails = await Promise.all(
+    highReturnBusinesses.map(async (b) => {
+      const user = await User.findById(b.userId).select("businessName").lean();
+      return { ...b, businessName: user?.businessName || "Unknown" };
+    })
+  );
 
   return (
-    <div className="flex min-h-screen w-full bg-slate-950">
+    <div className="flex min-h-screen w-full bg-gray-950 text-gray-300">
       <Sidebar
         businessName={(session.user as any)?.businessName}
         userName={session.user?.name}
         role={(session.user as any)?.role}
       />
 
-      <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64 border-l border-slate-800">
+      <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64 h-full border-l border-gray-800">
         <main className="flex-1 overflow-y-auto">
           <div className="py-8 min-h-screen font-sans">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <h1 className="text-3xl font-black tracking-tighter text-white uppercase">System Analytics</h1>
-                  <p className="mt-1 text-sm text-slate-400 tracking-wide">Global intelligence throughput and financial performance monitoring.</p>
-                </div>
-                <div className="flex items-center gap-3">
-                   <div className="flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                      <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Live Engine</span>
-                   </div>
-                </div>
-              </div>
+              <h1 className="text-3xl font-black text-white tracking-tight uppercase italic flex items-center gap-3">
+                <Activity className="h-8 w-8 text-blue-500" />
+                Platform Intelligence
+              </h1>
+              <p className="mt-2 text-sm text-gray-400 font-medium tracking-wide">Deep analytical insights into BizFlow ecosystem health.</p>
             </div>
-            
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 mt-10">
-              {/* Summary Cards */}
+
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 mt-10 space-y-10">
+              {/* Primary Metrics Grid */}
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                
-                <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl transition hover:border-indigo-500/50 group">
-                  <div className="flex items-center justify-between relative z-10">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Users</dt>
-                    <div className="p-2 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-                      <Users className="h-4 w-4 text-indigo-400" />
-                    </div>
-                  </div>
-                  <dd className="mt-4 text-4xl font-black text-white relative z-10">{totalUsers}</dd>
-                  <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-green-400 uppercase tracking-widest relative z-10">
-                    <TrendingUp className="h-3 w-3" /> +12% this month
-                  </div>
-                  <div className="absolute top-0 right-0 h-full w-24 bg-gradient-to-l from-indigo-500/5 to-transparent" />
-                </div>
-
-                <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl transition hover:border-blue-500/50 group">
-                  <div className="flex items-center justify-between relative z-10">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Orders Checked</dt>
-                    <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
-                      <Package className="h-4 w-4 text-blue-400" />
-                    </div>
-                  </div>
-                  <dd className="mt-4 text-4xl font-black text-white relative z-10">{totalOrders}</dd>
-                  <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-blue-400 uppercase tracking-widest relative z-10">
-                    <Search className="h-3 w-3" /> Real-time active
-                  </div>
-                  <div className="absolute top-0 right-0 h-full w-24 bg-gradient-to-l from-blue-500/5 to-transparent" />
-                </div>
-
-                <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl transition hover:border-red-500/50 group">
-                  <div className="flex items-center justify-between relative z-10">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">High Risk detected</dt>
-                    <div className="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
-                      <ShieldAlert className="h-4 w-4 text-red-400" />
-                    </div>
-                  </div>
-                  <dd className="mt-4 text-4xl font-black text-red-500 drop-shadow-lg relative z-10">{highRiskDetected}</dd>
-                  <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-red-400 uppercase tracking-widest relative z-10">
-                    Prevention Active
-                  </div>
-                  <div className="absolute top-0 right-0 h-full w-24 bg-gradient-to-l from-red-500/5 to-transparent" />
-                </div>
-
-                <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl transition hover:border-emerald-500/50 group">
-                  <div className="flex items-center justify-between relative z-10">
-                    <dt className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Total Revenue</dt>
-                    <div className="p-2 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
-                      <DollarSign className="h-4 w-4 text-emerald-400" />
-                    </div>
-                  </div>
-                  <dd className="mt-4 text-4xl font-black text-white relative z-10">${totalRevenue.toLocaleString()}</dd>
-                  <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-emerald-400 uppercase tracking-widest relative z-10">
-                    <ArrowUpRight className="h-3 w-3" /> Sustained Growth
-                  </div>
-                  <div className="absolute top-0 right-0 h-full w-24 bg-gradient-to-l from-emerald-500/5 to-transparent" />
-                </div>
-
+                <MetricCard title="Total Platform Orders" value={totalOrders} icon={Package} color="text-indigo-500" />
+                <MetricCard title="Gross Platform Revenue" value={`Rs ${totalRevenue.toLocaleString()}`} icon={TrendingUp} color="text-emerald-500" />
+                <MetricCard title="Monthly Subscription Revenue" value={`Rs ${monthlyRevenue.toLocaleString()}`} icon={CreditCard} color="text-cyan-500" />
+                <MetricCard title="Trial to Paid Conversion" value={`${totalUsers > 0 ? ((paidUsers / totalUsers) * 100).toFixed(1) : 0}%`} icon={ArrowUpRight} color="text-purple-500" />
               </div>
 
-              {/* Charts & Tables Section */}
-              <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-2">
-                
-                {/* Growth Chart Placeholder */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden group">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-sm font-bold text-white uppercase tracking-widest">Engine Growth Matrix</h3>
-                    <select className="bg-slate-800 border-none text-[10px] font-bold text-slate-400 rounded-lg px-2 py-1 focus:ring-0">
-                      <option>Last 30 Days</option>
-                      <option>Last 90 Days</option>
-                    </select>
-                  </div>
-                  <div className="h-64 w-full bg-slate-800/20 rounded-2xl border border-slate-700/50 border-dashed flex flex-col items-center justify-center relative group-hover:bg-slate-800/30 transition-all">
-                    <div className="flex gap-2 items-end h-32 mb-4">
-                      <div className="w-4 bg-indigo-500/20 h-1/4 rounded-t-sm" />
-                      <div className="w-4 bg-indigo-500/30 h-1/2 rounded-t-sm" />
-                      <div className="w-4 bg-indigo-500/40 h-1/3 rounded-t-sm" />
-                      <div className="w-4 bg-indigo-500/60 h-3/4 rounded-t-sm animate-pulse" />
-                      <div className="w-4 bg-indigo-500/40 h-2/3 rounded-t-sm" />
-                      <div className="w-4 bg-indigo-500/80 h-[90%] rounded-t-sm" />
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Neural Growth Visualization Placeholder</span>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 {/* High Return Rate Businesses */}
+                 <div className="bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl overflow-hidden">
+                   <div className="px-6 py-4 border-b border-gray-800 bg-gray-800/30 flex items-center justify-between">
+                     <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                       <AlertTriangle className="h-4 w-4 text-orange-500" />
+                       High Return-Rate Businesses
+                     </h3>
+                     <span className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Min 5 Orders</span>
+                   </div>
+                   <div className="p-4">
+                     {highReturnDetails.length === 0 ? (
+                       <div className="py-12 text-center text-gray-600 text-xs italic">All businesses within healthy return thresholds.</div>
+                     ) : (
+                       <div className="space-y-4">
+                         {highReturnDetails.map((b: any) => (
+                           <div key={b.userId} className="flex items-center justify-between p-3 rounded-xl bg-gray-950 border border-gray-800 hover:border-orange-500/30 transition-all group">
+                             <div className="flex items-center gap-3">
+                               <div className="h-8 w-8 rounded-lg bg-orange-500/10 border border-orange-500/20 flex items-center justify-center">
+                                 <Building className="h-4 w-4 text-orange-500" />
+                               </div>
+                               <div>
+                                 <div className="text-sm font-bold text-white group-hover:text-orange-400 transition-colors">{b.businessName}</div>
+                                 <div className="text-[10px] text-gray-500">{b.totalOrders} total orders</div>
+                               </div>
+                             </div>
+                             <div className="text-right">
+                               <div className="text-sm font-black text-orange-500">{b.returnRate.toFixed(1)}%</div>
+                               <div className="text-[9px] text-gray-500 uppercase font-bold">{b.returnedOrders} returns</div>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 </div>
 
-                {/* Top Searchers Table */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden group">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-8">Cluster Top Searchers</h3>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full">
-                      <thead>
-                        <tr className="border-b border-slate-800">
-                          <th className="pb-4 text-left text-[10px] font-bold text-slate-500 uppercase tracking-widest">Business</th>
-                          <th className="pb-4 text-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">Ops Count</th>
-                          <th className="pb-4 text-right text-[10px] font-bold text-slate-500 uppercase tracking-widest">Threat lvl</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800/50">
-                        {recentSearchers.map((searcher) => (
-                          <tr key={searcher.id} className="hover:bg-slate-800/30 transition-colors">
-                            <td className="py-4">
-                              <div className="text-xs font-bold text-white">{searcher.name}</div>
-                              <div className="text-[10px] text-slate-500">{searcher.city}</div>
-                            </td>
-                            <td className="py-4 text-center font-mono text-xs text-blue-400">{searcher.searches}</td>
-                            <td className="py-4 text-right">
-                              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
-                                searcher.riskHandled === 'High' ? 'text-red-500 bg-red-500/10' :
-                                searcher.riskHandled === 'Medium' ? 'text-orange-500 bg-orange-500/10' :
-                                'text-emerald-500 bg-emerald-500/10'
-                              }`}>
-                                {searcher.riskHandled}
-                              </span>
-                            </td>
-                          </tr>
+                 {/* Recent Platform Signups */}
+                 <div className="bg-gray-900 rounded-2xl border border-gray-800 shadow-2xl overflow-hidden">
+                   <div className="px-6 py-4 border-b border-gray-800 bg-gray-800/30 flex items-center justify-between">
+                     <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                       <Users className="h-4 w-4 text-blue-500" />
+                       Recent Platform Signups
+                     </h3>
+                   </div>
+                   <div className="p-4">
+                     <div className="space-y-4">
+                        {recentSignups.map((user: any) => (
+                          <div key={user._id} className="flex items-center justify-between p-3 rounded-xl bg-gray-950 border border-gray-800">
+                             <div className="flex items-center gap-3">
+                               <div className="h-8 w-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                                 <span className="text-[10px] font-black text-blue-500">{(user.name || 'U')[0].toUpperCase()}</span>
+                               </div>
+                               <div>
+                                 <div className="text-sm font-bold text-white">{user.businessName}</div>
+                                 <div className="text-[10px] text-gray-500 italic">{user.email}</div>
+                               </div>
+                             </div>
+                             <div className="text-right">
+                               <div className="text-[10px] text-gray-400 font-bold">{new Date(user.createdAt).toLocaleDateString()}</div>
+                               <span className="inline-flex items-center rounded bg-gray-800 px-1.5 py-0.5 text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                                 {normalizePlan(user.subscription?.plan)}
+                               </span>
+                             </div>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
+                     </div>
+                   </div>
+                 </div>
               </div>
             </div>
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+function MetricCard({ title, value, icon: Icon, color }: any) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-gray-900 border border-gray-800 shadow-xl p-6 group hover:border-gray-700 transition-all">
+      <div className="flex items-center justify-between mb-4">
+        <dt className="truncate text-[10px] uppercase tracking-widest font-black text-gray-500">{title}</dt>
+        <Icon className={`h-5 w-5 ${color} opacity-80 group-hover:opacity-100 transition`} />
+      </div>
+      <dd className="text-3xl font-black tracking-tight text-white">{value}</dd>
+      <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-${color.split('-')[1]}-500/50 to-transparent opacity-30 group-hover:opacity-100 transition-all`} />
     </div>
   );
 }

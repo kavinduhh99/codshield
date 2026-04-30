@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
+import { checkSubscription } from "@/lib/subscription";
 
 // Add a new order
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const { authorized, response, session } = await checkSubscription();
+    if (!authorized) return response;
 
     const { 
       customerName, phone, phone2, address, city, riskScore,
       items, itemsSubtotal, discount, totalAmount, paymentMethod, paymentStatus,
       deliveryFee, courierName, trackingNumber, notes 
     } = await req.json();
+
+    const userId = (session as any).user.id;
 
     if (!customerName || !phone || !address || !city) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
@@ -49,7 +47,7 @@ export async function POST(req: Request) {
     if (items && Array.isArray(items)) {
       for (const item of items) {
         if (item.productId && item.quantity > 0) {
-          const product = await Product.findOne({ _id: item.productId, userId: session.user.id });
+          const product = await Product.findOne({ _id: item.productId, userId: userId });
           if (!product) {
             return NextResponse.json({ message: `Product not found: ${item.productName}` }, { status: 404 });
           }
@@ -68,7 +66,7 @@ export async function POST(req: Request) {
       : undefined;
 
     const newOrder = await Order.create({
-      userId: session.user.id,
+      userId: userId,
       customerName,
       phone: normalizedPhone,
       ...(normalizedPhone2 && { phone2: normalizedPhone2 }),
@@ -98,15 +96,13 @@ export async function POST(req: Request) {
 // Get all orders for the current business
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const { authorized, response, session } = await checkSubscription();
+    if (!authorized) return response;
 
     await connectDB();
 
-    const orders = await Order.find({ userId: session.user.id }).sort({ createdAt: -1 }).lean();
+    const userId = (session as any).user.id;
+    const orders = await Order.find({ userId: userId }).sort({ createdAt: -1 }).lean();
 
     const mappedOrders = orders.map((order: any) => {
       // Fallback for old orders without items

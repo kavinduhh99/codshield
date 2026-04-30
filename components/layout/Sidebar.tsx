@@ -44,6 +44,11 @@ const businessLinks = [
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
+  { href: "/admin/payments", label: "Payments", icon: Banknote },
+  { href: "/admin/analytics", label: "Platform Analytics", icon: Activity },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 function SidebarContent({

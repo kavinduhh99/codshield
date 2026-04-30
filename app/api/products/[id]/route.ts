@@ -3,22 +3,34 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
+import { checkSubscription } from "@/lib/subscription";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const { authorized, response, session } = await checkSubscription();
+    if (!authorized) return response;
 
     await dbConnect();
     const body = await req.json();
 
     const { id } = await params;
+    const { name, sku, category, costPrice, sellingPrice, stock, lowStockAlert, active } = body;
+
     const updatedProduct = await Product.findOneAndUpdate(
-      { _id: id, userId: session.user.id },
-      { $set: body },
-      { new: true }
+      { _id: id, userId: (session as any).user.id },
+      { 
+        $set: {
+          ...(name && { name }),
+          ...(sku && { sku }),
+          ...(category && { category }),
+          ...(costPrice !== undefined && { costPrice }),
+          ...(sellingPrice !== undefined && { sellingPrice }),
+          ...(stock !== undefined && { stock }),
+          ...(lowStockAlert !== undefined && { lowStockAlert }),
+          ...(active !== undefined && { active }),
+        }
+      },
+      { new: true, runValidators: true }
     );
 
     if (!updatedProduct) {
@@ -34,17 +46,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const { authorized, response, session } = await checkSubscription();
+    if (!authorized) return response;
 
     await dbConnect();
 
     const { id } = await params;
     const deletedProduct = await Product.findOneAndDelete({
       _id: id,
-      userId: session.user.id,
+      userId: (session as any).user.id,
     });
 
     if (!deletedProduct) {

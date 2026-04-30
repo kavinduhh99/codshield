@@ -31,14 +31,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
-
-    const newUser = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      businessName,
+ 
+     const newUser = await User.create({
+       name,
+       email,
+       password,
+       businessName,
       phone,
       isEmailVerified: false,
       verificationToken,

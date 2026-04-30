@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import bcrypt from "bcryptjs";
 
 export interface IUser extends Document {
   name: string;
@@ -8,12 +9,14 @@ export interface IUser extends Document {
   phone?: string;
   role: "admin" | "business";
   subscription: {
-    plan: "free" | "pro";
+    plan: "Free Trial" | "Pro";
     startDate: Date;
     endDate?: Date;
     isActive: boolean;
   };
-  paymentStatus: "none" | "pending_verification";
+  status: "active" | "suspended";
+  paymentStatus: "paid" | "pending_verification" | "none";
+  isVerified: boolean;
   isEmailVerified: boolean;
   verificationToken?: string;
   createdAt: Date;
@@ -53,8 +56,8 @@ const UserSchema: Schema<IUser> = new Schema(
     subscription: {
       plan: {
         type: String,
-        enum: ["free", "pro"],
-        default: "free",
+        enum: ["Free Trial", "Pro"],
+        default: "Free Trial",
       },
       startDate: {
         type: Date,
@@ -62,16 +65,26 @@ const UserSchema: Schema<IUser> = new Schema(
       },
       endDate: {
         type: Date,
+        default: () => new Date(+new Date() + 30 * 24 * 60 * 60 * 1000), // 30 days trial
       },
       isActive: {
         type: Boolean,
-        default: false,
+        default: true,
       },
+    },
+    status: {
+      type: String,
+      enum: ["active", "suspended"],
+      default: "active",
     },
     paymentStatus: {
       type: String,
-      enum: ["none", "pending_verification"],
+      enum: ["paid", "pending_verification", "none"],
       default: "none",
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
     isEmailVerified: {
       type: Boolean,
@@ -85,6 +98,18 @@ const UserSchema: Schema<IUser> = new Schema(
     timestamps: true,
   }
 );
+
+UserSchema.pre("save", async function () {
+  if (!this.isModified("password")) {
+    return;
+  }
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password as string, salt);
+  } catch (error: any) {
+    throw error;
+  }
+});
 
 // Prevent mongoose from recompiling the model upon hot-reloading
 const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>("User", UserSchema);

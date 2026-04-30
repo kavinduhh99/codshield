@@ -7,9 +7,10 @@ declare module "next-auth" {
     role?: string;
     businessName?: string;
     subEnd?: Date;
+    plan?: string;
+    status?: string;
     isEmailVerified?: boolean;
     createdAt?: Date;
-    paymentStatus?: string;
   }
 
   interface Session {
@@ -21,9 +22,10 @@ declare module "next-auth" {
       role?: string;
       businessName?: string;
       subEnd?: Date;
+      plan?: string;
+      status?: string;
       isEmailVerified?: boolean;
       createdAt?: Date;
-      paymentStatus?: string;
     };
   }
 }
@@ -33,8 +35,9 @@ declare module "next-auth/jwt" {
     role?: string;
     businessName?: string;
     subEnd?: Date;
+    plan?: string;
+    status?: string;
     isEmailVerified?: boolean;
     createdAt?: Date;
-    paymentStatus?: string;
   }
 }

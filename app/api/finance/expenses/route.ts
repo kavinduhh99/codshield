@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Expense from "@/models/Expense";
 import mongoose from "mongoose";
+import { checkSubscription } from "@/lib/subscription";
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,22 +57,29 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    }
+    const { authorized, response, session } = await checkSubscription();
+    if (!authorized) return response;
 
     await dbConnect();
     const body = await req.json();
+    const { title, amount, category, date, notes } = body;
+
+    if (!title || !amount) {
+      return NextResponse.json({ message: "Title and amount are required" }, { status: 400 });
+    }
 
     const newExpense = await Expense.create({
-      ...body,
-      userId: new mongoose.Types.ObjectId(session.user.id),
+      title,
+      amount,
+      category: category || "General",
+      date: date ? new Date(date) : new Date(),
+      notes: notes || "",
+      userId: new mongoose.Types.ObjectId((session as any).user.id),
     });
 
     return NextResponse.json(newExpense, { status: 201 });
   } catch (error: any) {
     console.error("POST Expense Error:", error);
-    return NextResponse.json({ message: error.message || "Internal server error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

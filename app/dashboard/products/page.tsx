@@ -3,9 +3,27 @@
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useSession } from "next-auth/react";
-import { Loader2, Box, Plus, Search, Edit2, Trash2, AlertTriangle } from "lucide-react";
+import { 
+  Loader2, Box, Plus, Search, Edit2, Trash2, AlertTriangle, 
+  Download, FileText, Filter, BarChart3, CheckCircle, XCircle, Package
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+// ── Components ─────────────────────────────────────────────────────────────
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: any; color: string }) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-start gap-3 shadow-sm transition-all hover:shadow-md">
+      <div className={`p-2 rounded-lg ${color}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 dark:text-gray-400">{label}</p>
+        <p className="text-xl font-black text-gray-900 dark:text-white mt-0.5 italic">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function ProductsPage() {
   const { data: session, status } = useSession();
@@ -13,6 +31,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -46,10 +65,89 @@ export default function ProductsPage() {
     }
   };
 
-  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()));
+  // ── Export Logic ──────────────────────────────────────────────────────────
+  const exportToCSV = (type: "all" | "low-stock") => {
+    const dataToExport = type === "all" 
+      ? products 
+      : products.filter(p => p.stock <= p.lowStockAlert);
+
+    if (dataToExport.length === 0) {
+      alert("No products found to export.");
+      return;
+    }
+
+    const headers = [
+      "Product Name", "SKU", "Category", "Cost Price", "Selling Price", 
+      "Current Stock", "Low Stock Alert Qty", "Stock Status", 
+      "Stock Value Cost", "Stock Value Selling", "Active Status"
+    ];
+
+    const rows = dataToExport.map(p => {
+      const stockStatus = p.stock <= 0 ? "Out of Stock" : (p.stock <= p.lowStockAlert ? "Low Stock" : "In Stock");
+      const stockValueCost = (p.costPrice || 0) * (p.stock || 0);
+      const stockValueSelling = (p.sellingPrice || 0) * (p.stock || 0);
+      
+      return [
+        `"${p.name.replace(/"/g, '""')}"`,
+        `"${p.sku.replace(/"/g, '""')}"`,
+        `"${(p.category || 'General').replace(/"/g, '""')}"`,
+        p.costPrice || 0,
+        p.sellingPrice || 0,
+        p.stock || 0,
+        p.lowStockAlert || 0,
+        `"${stockStatus}"`,
+        stockValueCost,
+        stockValueSelling,
+        p.active ? "Active" : "Inactive"
+      ];
+    });
+
+    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    
+    const date = new Date().toISOString().split("T")[0];
+    const filename = type === "all" 
+      ? `bizflow-stock-report-${date}.csv` 
+      : `bizflow-low-stock-report-${date}.csv`;
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // ── Filter Logic ──────────────────────────────────────────────────────────
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
+    
+    let matchesFilter = true;
+    if (filter === "in-stock") matchesFilter = p.stock > p.lowStockAlert;
+    else if (filter === "low-stock") matchesFilter = p.stock <= p.lowStockAlert && p.stock > 0;
+    else if (filter === "out-of-stock") matchesFilter = p.stock <= 0;
+    else if (filter === "active") matchesFilter = p.active === true;
+    else if (filter === "inactive") matchesFilter = p.active === false;
+
+    return matchesSearch && matchesFilter;
+  });
+
+  // ── Summary Calculations ──────────────────────────────────────────────────
+  const totalProducts = products.length;
+  const totalStockUnits = products.reduce((acc, p) => acc + (p.stock || 0), 0);
+  const lowStockCount = products.filter(p => p.stock <= p.lowStockAlert && p.stock > 0).length;
+  const outOfStockCount = products.filter(p => p.stock <= 0).length;
+  const totalStockCostValue = products.reduce((acc, p) => acc + ((p.costPrice || 0) * (p.stock || 0)), 0);
+  const totalStockSellingValue = products.reduce((acc, p) => acc + ((p.sellingPrice || 0) * (p.stock || 0)), 0);
 
   if (status === "loading" || loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-blue-500"/></div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    );
   }
 
   return (
@@ -62,134 +160,227 @@ export default function ProductsPage() {
 
       <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64">
         <main className="flex-1">
-          <div className="py-6 pb-16 space-y-6">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="py-6 pb-16 space-y-6 mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+            
+            {/* Header */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-gray-100 dark:border-gray-800 pb-6">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Products & Stock</h1>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage your inventory and pricing.</p>
+                <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase italic tracking-tight">Products & Stock</h1>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 font-medium tracking-wide">Manage inventory levels, pricing, and active catalog.</p>
               </div>
-              <Link
-                href="/dashboard/products/new"
-                className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Product
-              </Link>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => exportToCSV("all")}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 shadow-sm border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all active:scale-95 uppercase tracking-widest"
+                >
+                  <FileText className="mr-2 h-4 w-4 text-gray-400" /> Stock Report
+                </button>
+                <button
+                  onClick={() => exportToCSV("low-stock")}
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-white dark:bg-gray-900 px-4 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all active:scale-95 uppercase tracking-widest"
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" /> Low Stock Report
+                </button>
+                <Link
+                  href="/dashboard/products/new"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-black text-white shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:scale-105 transition-all active:scale-95 uppercase tracking-widest"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add Product
+                </Link>
+              </div>
             </div>
 
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-              <div className="bg-white dark:bg-gray-800 shadow sm:rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row gap-4 justify-between">
-                  <div className="relative flex-1 max-w-md">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                      <Search className="h-5 w-5 text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      className="block w-full rounded-md border-gray-300 dark:border-gray-600 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                      placeholder="Search products by name or SKU..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </div>
-                </div>
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+              <StatCard label="Total Products" value={String(totalProducts)} icon={Box} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400" />
+              <StatCard label="Stock Units" value={totalStockUnits.toLocaleString()} icon={Package} color="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400" />
+              <StatCard label="Low Stock" value={String(lowStockCount)} icon={AlertTriangle} color="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" />
+              <StatCard label="Out of Stock" value={String(outOfStockCount)} icon={XCircle} color="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400" />
+              <StatCard label="Cost Value" value={`Rs ${Math.round(totalStockCostValue).toLocaleString()}`} icon={BarChart3} color="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400" />
+              <StatCard label="Sale Value" value={`Rs ${Math.round(totalStockSellingValue).toLocaleString()}`} icon={BarChart3} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
+            </div>
 
-                {/* ── Mobile card list ── */}
-                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredProducts.length === 0 ? (
-                    <div className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
-                      <Box className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                      <p>No products found.</p>
-                    </div>
-                  ) : (
-                    filteredProducts.map((p) => (
-                      <div key={p._id} className="p-4 flex flex-col gap-2 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{p.category} · {p.sku}</p>
-                          </div>
-                          {p.stock <= p.lowStockAlert ? (
-                            <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                              <AlertTriangle className="mr-1 h-3 w-3" />{p.stock} (Low)
+            {/* Controls */}
+            <div className="bg-white dark:bg-gray-900 shadow-xl rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
+              <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+                <div className="relative w-full lg:max-w-md">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    className="block w-full rounded-xl border border-gray-200 dark:border-gray-800 pl-10 pr-4 py-2.5 text-sm ring-offset-0 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white font-medium"
+                    placeholder="Search by name or SKU..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 mr-2">
+                    <Filter className="h-3 w-3" /> Filter
+                  </div>
+                  <select
+                    className="flex-1 lg:flex-none bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  >
+                    <option value="all">All Products</option>
+                    <option value="in-stock">In Stock</option>
+                    <option value="low-stock">Low Stock Alert</option>
+                    <option value="out-of-stock">Out of Stock</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 shadow-2xl rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
+              {/* ── Mobile card list ── */}
+              <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredProducts.length === 0 ? (
+                  <div className="px-4 py-20 text-center text-gray-500 dark:text-gray-400">
+                    <Box className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-700 mb-4" />
+                    <p className="font-bold uppercase tracking-widest text-xs">No products found</p>
+                  </div>
+                ) : (
+                  filteredProducts.map((p) => (
+                    <div key={p._id} className="p-5 flex flex-col gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-gray-900 dark:text-white truncate uppercase italic">{p.name}</p>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{p.category || 'General'} &bull; {p.sku}</p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {!p.active && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter bg-gray-100 dark:bg-gray-800 text-gray-400">Inactive</span>
+                          )}
+                          {p.stock <= 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                              Out of Stock
+                            </span>
+                          ) : p.stock <= p.lowStockAlert ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
+                              Low Stock: {p.stock}
                             </span>
                           ) : (
-                            <span className="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                              {p.stock} in stock
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                              Stock: {p.stock}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">Rs {p.sellingPrice.toLocaleString()}</span>
-                          <div className="flex items-center gap-3">
-                            <button onClick={() => router.push(`/dashboard/products/new?id=${p._id}`)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                              <Edit2 className="h-3 w-3" /> Edit
-                            </button>
-                            <button onClick={() => deleteProduct(p._id)}
-                              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium border border-gray-300 dark:border-gray-600 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20">
-                              <Trash2 className="h-3 w-3" /> Delete
-                            </button>
-                          </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-50 dark:border-gray-800/50">
+                        <span className="text-lg font-black text-gray-900 dark:text-white italic">Rs {p.sellingPrice.toLocaleString()}</span>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => router.push(`/dashboard/products/new?id=${p._id}`)}
+                            className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all">
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button onClick={() => deleteProduct(p._id)}
+                            className="p-2 rounded-lg border border-gray-200 dark:border-gray-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
+                    </div>
+                  ))
+                )}
+              </div>
 
-                {/* ── Desktop table ── */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+              {/* ── Desktop table ── */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Product Info</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Pricing</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Stock Level</th>
+                      <th className="px-6 py-4 text-left text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Status</th>
+                      <th className="px-6 py-4 text-right text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-900/20 divide-y divide-gray-100 dark:divide-gray-800/50">
+                    {filteredProducts.length === 0 ? (
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Product</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">SKU</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Stock</th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                        <td colSpan={5} className="px-6 py-24 text-center text-gray-500 dark:text-gray-400">
+                          <Box className="mx-auto h-16 w-16 text-gray-200 dark:text-gray-800 mb-4" />
+                          <p className="font-bold uppercase tracking-widest text-xs italic">No matching products in your inventory</p>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {filteredProducts.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                            <Box className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                            <p>No products found.</p>
+                    ) : (
+                      filteredProducts.map((p) => (
+                        <tr key={p._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                                <Box className="h-5 w-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                              </div>
+                              <div>
+                                <div className="text-sm font-black text-gray-900 dark:text-white uppercase italic tracking-tight">{p.name}</div>
+                                <div className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest mt-0.5">{p.category || 'General'} &bull; {p.sku}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-black text-gray-900 dark:text-white">Rs {p.sellingPrice.toLocaleString()}</div>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cost: Rs {p.costPrice.toLocaleString()}</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {p.stock <= 0 ? (
+                              <div className="flex flex-col">
+                                <span className="inline-flex items-center text-[10px] font-black uppercase text-red-600 dark:text-red-400">
+                                  <XCircle className="mr-1 h-3 w-3" /> Out of Stock
+                                </span>
+                              </div>
+                            ) : p.stock <= p.lowStockAlert ? (
+                              <div className="flex flex-col">
+                                <span className="inline-flex items-center text-[10px] font-black uppercase text-orange-600 dark:text-orange-400">
+                                  <AlertTriangle className="mr-1 h-3 w-3" /> Low Stock
+                                </span>
+                                <span className="text-xs font-black text-gray-900 dark:text-white mt-0.5">{p.stock} units</span>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col">
+                                <span className="inline-flex items-center text-[10px] font-black uppercase text-green-600 dark:text-green-400">
+                                  <CheckCircle className="mr-1 h-3 w-3" /> Healthy
+                                </span>
+                                <span className="text-xs font-black text-gray-900 dark:text-white mt-0.5">{p.stock} units</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {p.active ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 tracking-tighter">
+                                Active
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 tracking-tighter">
+                                Inactive
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={() => router.push(`/dashboard/products/new?id=${p._id}`)} 
+                                className="p-2 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 transition-all border border-transparent hover:border-blue-100 dark:hover:border-blue-900/50"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              <button 
+                                onClick={() => deleteProduct(p._id)} 
+                                className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-all border border-transparent hover:border-red-100 dark:hover:border-red-900/50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
-                      ) : (
-                        filteredProducts.map((p) => (
-                          <tr key={p._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">{p.name}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">{p.category}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{p.sku}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">Rs {p.sellingPrice.toLocaleString()}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {p.stock <= p.lowStockAlert ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
-                                  <AlertTriangle className="mr-1 h-3 w-3" />{p.stock} (Low)
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                                  {p.stock} in stock
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button onClick={() => router.push(`/dashboard/products/new?id=${p._id}`)} className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 mr-4">
-                                <Edit2 className="h-4 w-4 inline" />
-                              </button>
-                              <button onClick={() => deleteProduct(p._id)} className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300">
-                                <Trash2 className="h-4 w-4 inline" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
