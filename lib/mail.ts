@@ -29,7 +29,7 @@ export async function sendAdminPaymentNotification(userName: string, businessNam
             <p style="margin: 8px 0;"><strong>User Email:</strong> ${userEmail}</p>
           </div>
           <p style="font-size: 14px; color: #64748b; margin-top: 32px;">
-            Please log in to the <a href="${process.env.NEXTAUTH_URL}/admin/subscriptions" style="color: #6366f1; text-decoration: none;">Admin Subscriptions Dashboard</a> to verify and approve this transaction.
+            Please log in to the <a href="${(process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "").replace(/\/$/, "")}/admin/payments" style="color: #6366f1; text-decoration: none;">Admin Subscriptions Dashboard</a> to verify and approve this transaction.
           </p>
         </div>
       `

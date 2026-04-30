@@ -158,17 +158,17 @@ export default function FinancePage() {
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Finance & Performance</h1>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Track your revenue, profit, and expenses.</p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2 w-full sm:w-auto">
                 <button
                   onClick={generateCSV}
                   disabled={isFetching || !stats}
-                  className="inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download Report
                 </button>
                 <Link
                   href="/dashboard/finance/expenses/new"
-                  className="inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
                 >
                   <Plus className="mr-2 h-4 w-4" /> Add Expense
                 </Link>
@@ -240,7 +240,7 @@ export default function FinancePage() {
               {!isFetching && stats && (
                 <>
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Delivered Revenue</p>
@@ -303,8 +303,8 @@ export default function FinancePage() {
                       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Monthly Financial Summary</h3>
                       </div>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <div className="overflow-x-auto touch-pan-x">
+                        <table className="min-w-[800px] w-full divide-y divide-gray-200 dark:divide-gray-700">
                           <thead className="bg-gray-50 dark:bg-gray-900/50">
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Month</th>
@@ -342,8 +342,8 @@ export default function FinancePage() {
                       <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Filtered Expenses</h3>
                     </div>
 
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <div className="overflow-x-auto touch-pan-x">
+                      <table className="min-w-[600px] w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>

@@ -43,8 +43,8 @@ export async function POST(req: Request) {
       verificationToken,
     });
 
-    // Generate dynamic verification link using NEXTAUTH_URL or fallback to localhost for development
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    // Generate dynamic verification link using NEXT_PUBLIC_APP_URL (standard for Vercel) or NEXTAUTH_URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
     const verifyLink = `${baseUrl.replace(/\/$/, "")}/api/auth/verify?token=${verificationToken}`;
     console.log(`[AUTH] Verification Link for ${email}: ${verifyLink}`);
 

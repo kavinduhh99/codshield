@@ -186,7 +186,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Tabs Navigation */}
                   <div className="w-full md:w-64 flex-shrink-0">
-                    <nav className="flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0 space-x-1 md:space-x-0 md:space-y-1 scrollbar-hide">
+                    <nav className="flex flex-row md:flex-col overflow-x-auto touch-pan-x md:overflow-x-visible pb-2 md:pb-0 space-x-1 md:space-x-0 md:space-y-1 no-scrollbar">
                       {tabs.map((tab) => {
                         const Icon = tab.icon;
                         const isActive = activeTab === tab.id;

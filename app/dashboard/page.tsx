@@ -183,7 +183,7 @@ export default function DashboardPage() {
             {/* ── Section 1: Today Summary ── */}
             <section>
               <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Today's Summary</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <StatCard
                   label="Today Revenue"
                   value={`Rs ${(today?.revenue ?? 0).toLocaleString()}`}
@@ -365,7 +365,7 @@ export default function DashboardPage() {
                     <Link href="/dashboard/receivables" className="text-blue-600 dark:text-blue-400 hover:underline">Add expected payments →</Link>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-yellow-200 dark:border-yellow-800/50 p-4 shadow-sm flex items-start gap-3">
                       <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400"><Banknote className="h-4 w-4" /></div>
                       <div>
@@ -414,8 +414,8 @@ export default function DashboardPage() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <div className="overflow-x-auto touch-pan-x">
+                    <table className="min-w-[800px] w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                           {["Customer", "City", "Items", "Total", "Payment", "Status", "Date"].map(h => (
