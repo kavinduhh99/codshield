@@ -5,18 +5,18 @@ const brevo = new BrevoClient({
 });
 
 const SENDER = { 
-    name: 'CODShield System', 
+    name: 'BizFlow System', 
     email: process.env.BREVO_SENDER_EMAIL as string 
 };
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@codshield.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "admin@bizflow.com";
 
 export async function sendAdminPaymentNotification(userName: string, businessName: string, userEmail: string) {
   try {
     await brevo.transactionalEmails.sendTransacEmail({
       subject: `[PAYMENT REQUEST] ${businessName} - Verification Required`,
       sender: SENDER,
-      to: [{ email: ADMIN_EMAIL, name: 'CODShield Admin' }],
+      to: [{ email: ADMIN_EMAIL, name: 'BizFlow Admin' }],
       htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0f172a; padding: 40px; border-radius: 16px; color: #f1f5f9; border: 1px solid #1e293b;">
           <h2 style="color: #6366f1; margin-bottom: 24px; border-bottom: 1px solid #1e293b; padding-bottom: 12px;">New Payment Verification Request</h2>

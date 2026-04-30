@@ -77,12 +77,12 @@ export default function BillingPage() {
       <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64">
         <main className="flex-1 overflow-y-auto">
           <div className="py-6 min-h-screen">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 flex items-center justify-between">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Billing & Subscription</h1>
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="inline-flex items-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-lg bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-all active:scale-95"
               >
                 <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
                 Refresh Status
@@ -145,7 +145,7 @@ export default function BillingPage() {
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Account Name</dt>
-                          <dd className="mt-1 text-sm text-gray-900 dark:text-white font-mono">CODShield </dd>
+                          <dd className="mt-1 text-sm text-gray-900 dark:text-white font-mono">BizFlow </dd>
                         </div>
                         <div>
                           <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Account Number</dt>

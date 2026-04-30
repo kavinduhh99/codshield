@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   ShieldAlert,
@@ -9,11 +10,17 @@ import {
   Users,
   Activity,
   CreditCard,
-  PlusCircle,
   Package,
   FileText,
   Menu,
   X,
+  LayoutDashboard,
+  ShoppingCart,
+  Box,
+  DollarSign,
+  Settings,
+  PlusCircle,
+  Banknote,
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -24,16 +31,19 @@ interface SidebarProps {
 }
 
 const businessLinks = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard/order/history", label: "Orders", icon: ShoppingCart },
   { href: "/dashboard/order/new", label: "Add Order", icon: PlusCircle },
-  { href: "/dashboard/order/history", label: "Order History", icon: Package },
-  { href: "/dashboard/risk", label: "Risk Checker", icon: ShieldAlert },
-  { href: "/dashboard/billing", label: "Billing", icon: FileText },
+  { href: "/dashboard/risk", label: "COD Risk Checker", icon: ShieldAlert },
+  { href: "/dashboard/products", label: "Products / Stock", icon: Box },
+  { href: "/dashboard/finance", label: "Finance", icon: DollarSign },
+  { href: "/dashboard/receivables", label: "Receivables", icon: Banknote },
+  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 const adminLinks = [
-  { href: "/admin/users", label: "Users List", icon: Users },
-  { href: "/admin/subscriptions", label: "Subscription Management", icon: CreditCard },
-  { href: "/admin/analytics", label: "System Analytics", icon: Activity },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
 ];
 
 function SidebarContent({
@@ -51,8 +61,10 @@ function SidebarContent({
       {/* Logo Header */}
       <div className="flex h-16 items-center flex-shrink-0 px-4 bg-gray-950 justify-between">
         <div className="flex items-center">
-          <ShieldAlert className="h-8 w-8 text-blue-500 mr-2" />
-          <span className="text-xl font-bold tracking-tight">CODShield</span>
+          <div className="mr-2 overflow-hidden rounded-md bg-slate-900 border border-slate-800">
+             <Image src="/logo.png" alt="BizFlow Logo" width={32} height={32} className="object-contain w-auto h-auto" />
+          </div>
+          <span className="text-xl font-bold tracking-tight">BizFlow</span>
         </div>
         {/* Close button - only visible on mobile */}
         {onClose && (
@@ -154,8 +166,10 @@ export function Sidebar({ businessName, userName, role }: SidebarProps) {
       {/* ── MOBILE HEADER ── */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 flex h-14 items-center justify-between bg-gray-950 border-b border-gray-800 px-4 shadow-lg">
         <div className="flex items-center">
-          <ShieldAlert className="h-6 w-6 text-blue-500 mr-2" />
-          <span className="text-lg font-bold tracking-tight text-white">CODShield</span>
+          <div className="mr-2 overflow-hidden rounded-md bg-slate-900 border border-slate-800 flex-shrink-0">
+             <Image src="/logo.png" alt="BizFlow Logo" width={24} height={24} className="object-contain w-auto h-auto" />
+          </div>
+          <span className="text-lg font-bold tracking-tight text-white">BizFlow</span>
         </div>
         <button
           onClick={() => setMobileOpen(true)}

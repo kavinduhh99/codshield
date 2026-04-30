@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import connectDB from "@/lib/db";
 import Order, { IOrder } from "@/models/Order";
 import Intelligence from "@/models/Intelligence";
+import Product from "@/models/Product";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -20,7 +21,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
-    if (!["delivered", "returned"].includes(status)) {
+    if (!["processing", "shipped", "delivered", "returned", "cancelled"].includes(status)) {
       return NextResponse.json({ message: "Invalid status value" }, { status: 400 });
     }
 
@@ -51,6 +52,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     await order.save();
 
+    // ── Multi-item Stock Restore ──
+    if ((status === "returned" || status === "cancelled") && (previousStatus !== "returned" && previousStatus !== "cancelled")) {
+      if (order.items && order.items.length > 0) {
+        for (const item of order.items) {
+          if (item.productId && item.quantity > 0) {
+            await Product.findByIdAndUpdate(item.productId, { $inc: { stock: item.quantity } });
+          }
+        }
+      } else if (order.productId && order.quantity > 0) {
+        // Fallback for legacy orders
+        await Product.findByIdAndUpdate(order.productId, { $inc: { stock: order.quantity } });
+      }
+    }
+
     // ── Total Orders Counter ──
     // Increment totalOrders the first time an order leaves 'pending'.
     // This keeps the Intelligence denominator accurate for the weighted risk formula.
@@ -62,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         const normalizedPhone = normalizePhone(phoneStr);
         await Intelligence.findOneAndUpdate(
           { phone: normalizedPhone },
-          { $inc: { totalOrders: 1 } },
+          { $inc: { totalOrders: 1 }, $set: { lastOrderDate: new Date() } },
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
       }
@@ -102,7 +117,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         
         const result = await Intelligence.findOneAndUpdate(
           { phone: normalizedPhone },
-          { $inc: { failedOrders: 1 } },
+          { $inc: { failedOrders: 1 }, $set: { lastOrderDate: new Date() } },
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
         console.log(`[Status Update] Intelligence record updated for ${normalizedPhone}:`, result);
@@ -125,7 +140,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         const result = await Intelligence.findOneAndUpdate(
           { phone: normalizedPhone },
-          { $inc: { successOrders: 1 } },
+          { $inc: { successOrders: 1 }, $set: { lastOrderDate: new Date() } },
           { upsert: true, new: true, setDefaultsOnInsert: true }
         );
         console.log(`[Status Update] Success record updated for ${normalizedPhone}:`, result);

@@ -65,7 +65,7 @@ export async function POST(req: Request) {
     }
 
     const checkPhoneRisk = async (p?: string) => {
-      if (!p) return { score: 0, failedOrders: 0, successOrders: 0 };
+      if (!p) return { score: 0, failedOrders: 0, successOrders: 0, totalOrders: 0, lastOrderDate: null };
 
       const normalizedPhone = normalizePhone(p);
 
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
       const successOrders = intel?.successOrders ?? 0;
       const isBlacklisted = (intel as any)?.isBlacklisted ?? false;
 
-      if (isBlacklisted) return { score: 100, failedOrders, successOrders };
-      if (totalOrders === 0) return { score: 0, failedOrders, successOrders };
+      if (isBlacklisted) return { score: 100, failedOrders, successOrders, totalOrders, lastOrderDate: intel?.lastOrderDate || null };
+      if (totalOrders === 0) return { score: 0, failedOrders, successOrders, totalOrders, lastOrderDate: intel?.lastOrderDate || null };
 
       // ── Step 2: Fetch individual returned orders for weighted scoring ──
       // Order docs may store raw phone; search all normalized variants.
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       }
 
       const score = Math.min(100, Math.round((weightedReturns / totalOrders) * 100));
-      return { score, failedOrders, successOrders };
+      return { score, failedOrders, successOrders, totalOrders, lastOrderDate: intel?.lastOrderDate || null };
     };
 
     const risk1 = await checkPhoneRisk(phone);
@@ -117,6 +117,8 @@ export async function POST(req: Request) {
     const riskScore = Math.max(risk1.score, risk2.score);
     const failedOrders = Math.max(risk1.failedOrders, risk2.failedOrders);
     const successOrders = risk1.successOrders + risk2.successOrders;
+    const totalOrders = Math.max(risk1.totalOrders, risk2.totalOrders);
+    const lastOrderDate = risk1.lastOrderDate || risk2.lastOrderDate || null;
     const riskLevel = getRiskLevel(riskScore);
 
     // ── Step 3: Non-blocking search logging (fire-and-forget) ──
@@ -134,6 +136,8 @@ export async function POST(req: Request) {
       riskLevel,
       failedOrders,
       successOrders,
+      totalOrders,
+      lastOrderDate,
       originalPhone: phone,
       normalizedPhone: phone ? normalizePhone(phone) : null,
       phone2: phone2 || null,

@@ -56,9 +56,9 @@ export async function POST(req: Request) {
      */
     try {
       const emailRes = await brevo.transactionalEmails.sendTransacEmail({
-        subject: 'Verify your CODShield Account',
+        subject: 'Verify your BizFlow Account',
         sender: { 
-            name: 'CODShield', 
+            name: 'BizFlow', 
             email: process.env.BREVO_SENDER_EMAIL as string 
         },
         to: [{ email, name }],
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #111827; padding: 40px; border-radius: 12px; color: #fff; text-align: center;">
             <h1 style="color: #60A5FA; margin-bottom: 20px;">Protect Your Business</h1>
             <p style="color: #D1D5DB; font-size: 16px; margin-bottom: 30px;">
-              Welcome to CODShield. To activate your eCommerce risk intelligence dashboard, please verify your email address.
+              Welcome to BizFlow. To activate your dashboard, please verify your email address.
             </p>
             <a href="${verifyLink}" style="display: inline-block; background-color: #2563EB; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
               Verify Email Account

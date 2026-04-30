@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "CODShield - eCommerce Risk Intelligence",
+  title: "BizFlow - Business Management System",
   description: "Advanced order risk detection and fraud prevention for Sri Lankan sellers",
 };
 

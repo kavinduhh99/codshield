@@ -6,6 +6,7 @@ export interface IIntelligence extends Document {
   failedOrders: number;
   successOrders: number;
   isBlacklisted: boolean;
+  lastOrderDate?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -33,6 +34,9 @@ const IntelligenceSchema = new Schema(
     isBlacklisted: {
       type: Boolean,
       default: false,
+    },
+    lastOrderDate: {
+      type: Date,
     },
   },
   {

@@ -1,20 +1,21 @@
 import Link from "next/link";
-import { Mail, ShieldAlert } from "lucide-react";
+import Image from "next/image";
+import { Mail } from "lucide-react";
 
 export default function VerifyEmailPage() {
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="p-3 bg-blue-900/30 rounded-full border border-blue-500/30">
-             <ShieldAlert className="h-12 w-12 text-blue-500" />
+          <div className="overflow-hidden rounded-xl bg-slate-900 border border-slate-800">
+             <Image src="/logo.png" alt="BizFlow Logo" width={64} height={64} className="object-contain w-auto h-auto" />
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
           Verify your email
         </h2>
         <p className="mt-2 text-center text-sm text-gray-400">
-          We need to protect CODShield from malicious accounts.
+          We need to protect BizFlow from malicious accounts.
         </p>
       </div>
 

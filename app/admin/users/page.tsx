@@ -44,22 +44,59 @@ export default async function AdminUsersPage() {
 
             <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8 mt-8">
               <div className="flex flex-col rounded-xl overflow-hidden shadow-2xl border border-gray-800 bg-gray-900">
-                <div className="overflow-x-auto min-w-full align-middle">
+                {/* ── Mobile card list ── */}
+                <div className="md:hidden divide-y divide-gray-800">
+                  {users.length === 0 ? (
+                    <div className="py-12 text-center text-gray-500 text-sm italic">System index is empty.</div>
+                  ) : (
+                    users.map((item: any) => (
+                      <div key={item._id} className="p-4 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-semibold text-gray-200">{item.name}</div>
+                            <div className="text-gray-500 text-xs mt-0.5">{item.email}</div>
+                          </div>
+                          <span className="inline-flex items-center rounded bg-gray-800/80 px-2 py-0.5 text-[10px] font-medium text-blue-400 ring-1 ring-inset ring-blue-400/20 uppercase tracking-widest">
+                            {item.subscription?.plan || "CORE"}
+                          </span>
+                        </div>
+                        
+                        <div className="bg-gray-800/30 rounded-lg p-3">
+                          <div className="text-white text-sm font-medium">{item.businessName}</div>
+                          {item.phone && <div className="text-gray-500 text-xs mt-0.5">{item.phone}</div>}
+                        </div>
+
+                        <div className="flex flex-col gap-3 pt-2 border-t border-gray-800">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400">Subscription Status</span>
+                            <SubscriptionToggle 
+                                userId={item._id} 
+                                initialStatus={item.subscription?.isActive || false}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-400">Email Verification</span>
+                            <EmailVerifyToggle 
+                                 userId={item._id} 
+                                 initialStatus={item.isEmailVerified || false}
+                                 email={item.email}
+                             />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* ── Desktop table ── */}
+                <div className="hidden md:block overflow-x-auto min-w-full align-middle">
                   <table className="min-w-full divide-y divide-gray-800">
                     <thead className="bg-gray-800/50">
                       <tr>
-                        <th scope="col" className="py-4 pl-6 pr-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                          Proprietor Profile
-                        </th>
-                        <th scope="col" className="px-3 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                          Registered Business
-                        </th>
-                        <th scope="col" className="px-3 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">
-                          Platform Layout
-                        </th>
-                        <th scope="col" className="relative py-4 pl-3 pr-6 text-right sm:pr-8 text-xs font-semibold uppercase text-gray-300">
-                          Status Command
-                        </th>
+                        <th scope="col" className="py-4 pl-6 pr-3 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Proprietor Profile</th>
+                        <th scope="col" className="px-3 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Registered Business</th>
+                        <th scope="col" className="px-3 py-4 text-left text-xs font-semibold text-gray-300 uppercase tracking-wider">Platform Layout</th>
+                        <th scope="col" className="relative py-4 pl-3 pr-6 text-right sm:pr-8 text-xs font-semibold uppercase text-gray-300">Status Command</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-800 bg-gray-900/50">
@@ -79,12 +116,12 @@ export default async function AdminUsersPage() {
                             </span>
                           </td>
                           <td className="relative whitespace-nowrap py-5 pl-3 pr-6 text-right text-sm font-medium sm:pr-8">
-                            <div className="flex flex-col items-end right-0">
+                            <div className="flex flex-col items-end">
                                <SubscriptionToggle 
                                     userId={item._id} 
                                     initialStatus={item.subscription?.isActive || false}
                                 />
-                                <div className="mt-2 flex justify-end">
+                                <div className="mt-2">
                                   <EmailVerifyToggle 
                                        userId={item._id} 
                                        initialStatus={item.isEmailVerified || false}
@@ -97,9 +134,7 @@ export default async function AdminUsersPage() {
                       ))}
                       {users.length === 0 && (
                         <tr>
-                          <td colSpan={4} className="py-16 text-center text-gray-500 text-sm italic">
-                            System index is empty.
-                          </td>
+                          <td colSpan={4} className="py-16 text-center text-gray-500 text-sm italic">System index is empty.</td>
                         </tr>
                       )}
                     </tbody>
