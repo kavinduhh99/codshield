@@ -153,7 +153,7 @@ export default function SettingsPage() {
                )}
              </div>
              
-             <div className="flex items-center gap-4">
+             <div className="flex items-center gap-4 w-full sm:w-auto">
                {saveMessage && (
                  <span className={`hidden md:flex text-xs items-center ${saveMessage.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                    {saveMessage.type === "success" ? <CheckCircle className="h-3.5 w-3.5 mr-1" /> : <XCircle className="h-3.5 w-3.5 mr-1" />}
@@ -163,7 +163,7 @@ export default function SettingsPage() {
                <button
                  onClick={handleSave}
                  disabled={!hasUnsavedChanges || isSaving || isLoading}
-                 className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+                 className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 w-full sm:w-auto"
                >
                  {isSaving ? <Loader2 className="animate-spin h-4 w-4"/> : <><Save className="-ml-1 mr-2 h-4 w-4"/> Save</>}
                </button>
@@ -191,31 +191,49 @@ export default function SettingsPage() {
                 </div>
               ) : settings ? (
                 <div className="flex flex-col md:flex-row gap-8">
-                  {/* Tabs Navigation */}
-                  <div className="w-full md:w-64 flex-shrink-0">
-                    <div className="w-full overflow-x-auto touch-pan-x no-scrollbar">
-                      <nav className="flex flex-row md:flex-col min-w-max md:min-w-0 pb-2 md:pb-0 space-x-1 md:space-x-0 md:space-y-1">
-                        {tabs.map((tab) => {
-                          const Icon = tab.icon;
-                          const isActive = activeTab === tab.id;
-                          return (
-                            <button
-                              key={tab.id}
-                              onClick={() => setActiveTab(tab.id)}
-                              className={`flex items-center shrink-0 px-4 py-2.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                                isActive 
-                                  ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
-                                  : "text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
-                              }`}
-                            >
-                              <Icon className={`flex-shrink-0 -ml-1 mr-3 h-5 w-5 ${isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
-                              <span>{tab.label}</span>
-                            </button>
-                          );
-                        })}
-                      </nav>
-                    </div>
-                  </div>
+                   {/* Navigation */}
+                   <div className="w-full md:w-64 flex-shrink-0">
+                     {/* Mobile Select Navigation */}
+                     <div className="block md:hidden mb-6">
+                       <label htmlFor="settings-tabs" className="sr-only">Select Tab</label>
+                       <select
+                         id="settings-tabs"
+                         value={activeTab}
+                         onChange={(e) => setActiveTab(e.target.value)}
+                         className="block w-full rounded-lg border-gray-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500 py-3 px-4 shadow-sm"
+                       >
+                         {tabs.map((tab) => (
+                           <option key={tab.id} value={tab.id}>
+                             {tab.label}
+                           </option>
+                         ))}
+                       </select>
+                     </div>
+
+                     {/* Desktop Tabs Navigation */}
+                     <div className="hidden md:block">
+                       <nav className="flex flex-col space-y-1">
+                         {tabs.map((tab) => {
+                           const Icon = tab.icon;
+                           const isActive = activeTab === tab.id;
+                           return (
+                             <button
+                               key={tab.id}
+                               onClick={() => setActiveTab(tab.id)}
+                               className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                                 isActive 
+                                   ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
+                                   : "text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
+                               }`}
+                             >
+                               <Icon className={`flex-shrink-0 -ml-1 mr-3 h-5 w-5 ${isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
+                               <span>{tab.label}</span>
+                             </button>
+                           );
+                         })}
+                       </nav>
+                     </div>
+                   </div>
 
                   {/* Tab Content */}
                   <div className="flex-1 bg-white dark:bg-slate-900 shadow-sm border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden min-w-0">
