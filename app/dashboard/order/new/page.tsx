@@ -307,7 +307,7 @@ export default function AddOrderPage() {
 
       <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64">
         <main className="flex-1">
-          <div className="py-6 pb-16 space-y-8">
+          <div className="py-6 pb-28 space-y-8">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
               <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Add New Order</h1>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -445,13 +445,14 @@ export default function AddOrderPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveItem(item.id)}
-                                    className="absolute top-3 right-3 text-gray-400 hover:text-red-500 transition-colors bg-white dark:bg-gray-800 p-1.5 rounded-full border border-gray-200 dark:border-gray-700 shadow-sm"
+                                    aria-label="Remove item"
+                                    className="absolute top-3 right-3 z-20 flex h-10 w-10 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 pointer-events-auto shadow-sm"
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <Trash2 className="h-4 w-4" />
                                   </button>
                                 )}
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pr-12 md:pr-0">
                                   {/* Product Selector */}
                                   <div className="md:col-span-5 relative">
                                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Product</label>

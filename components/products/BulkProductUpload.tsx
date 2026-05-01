@@ -147,7 +147,7 @@ export function BulkProductUpload({ onSuccess }: BulkProductUploadProps) {
         <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
             <Package className="h-32 w-32 text-blue-500 rotate-12" />
         </div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
           <div>
             <h2 className="text-xl font-black italic uppercase tracking-tighter text-white flex items-center gap-2">
               <Upload className="h-5 w-5 text-blue-500" />
@@ -155,16 +155,16 @@ export function BulkProductUpload({ onSuccess }: BulkProductUploadProps) {
             </h2>
             <p className="text-slate-400 text-sm mt-1">Update your inventory instantly via CSV or Excel sheets.</p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={downloadSampleCSV}
-              className="flex-1 md:flex-none inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 transition-all font-bold text-xs uppercase tracking-widest active:scale-95"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 hover:bg-slate-750 transition-all font-bold text-xs uppercase tracking-widest active:scale-95"
             >
               <Download className="h-4 w-4 mr-2" /> Sample CSV
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="flex-1 md:flex-none inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95"
             >
               <Upload className="h-4 w-4 mr-2" /> Start Import
             </button>
@@ -243,7 +243,7 @@ export function BulkProductUpload({ onSuccess }: BulkProductUploadProps) {
                            <h4 className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
                             <CheckCircle2 className="h-3 w-3 text-emerald-500" /> Preview (First 5 records)
                           </h4>
-                          <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/50">
+                          <div className="border border-slate-800 rounded-2xl overflow-x-auto bg-slate-950/50">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead className="bg-slate-900">
                                     <tr>
@@ -274,18 +274,18 @@ export function BulkProductUpload({ onSuccess }: BulkProductUploadProps) {
                         </div>
                       )}
 
-                      <div className="flex gap-3 pt-4">
+                      <div className="flex flex-col sm:flex-row gap-3 pt-4">
                         <button
                           onClick={reset}
                           disabled={loading}
-                          className="flex-1 py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50"
+                          className="w-full py-4 rounded-2xl bg-slate-800 hover:bg-slate-700 transition-all font-bold text-xs uppercase tracking-widest disabled:opacity-50"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={submitImport}
                           disabled={loading || previewData.valid.length === 0}
-                          className="flex-[2] py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center"
+                          className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 transition-all font-bold text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center"
                         >
                           {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : `Import ${previewData.valid.length} Products`}
                         </button>

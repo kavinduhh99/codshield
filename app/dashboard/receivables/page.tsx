@@ -280,16 +280,16 @@ export default function ReceivablesPage() {
 
       <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64">
         <main className="flex-1">
-          <div className="py-6 pb-16 space-y-8 mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
+          <div className="py-6 pb-16 space-y-8 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
+              <div className="min-w-0">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Receivables</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track payments expected from couriers, banks, and payment partners.</p>
               </div>
               <button onClick={() => { setEditTarget(null); setShowModal(true); }}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-sm">
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-sm transition-all active:scale-95">
                 <Plus className="h-4 w-4" /> Add Receivable
               </button>
             </div>
@@ -326,7 +326,7 @@ export default function ReceivablesPage() {
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No receivables yet.</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Add expected payments to track cash flow.</p>
                   <button onClick={() => { setEditTarget(null); setShowModal(true); }}
-                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
+                    className="mt-4 w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700">
                     <Plus className="h-3.5 w-3.5" /> Add Receivable
                   </button>
                 </div>
