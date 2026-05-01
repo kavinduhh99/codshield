@@ -158,17 +158,17 @@ export default function FinancePage() {
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Finance & Performance</h1>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Track your revenue, profit, and expenses.</p>
               </div>
-              <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                 <button
                   onClick={generateCSV}
                   disabled={isFetching || !stats}
-                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                 >
                   <Download className="mr-2 h-4 w-4" /> Download Report
                 </button>
                 <Link
                   href="/dashboard/finance/expenses/new"
-                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                  className="w-full sm:w-auto inline-flex items-center justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 transition-colors"
                 >
                   <Plus className="mr-2 h-4 w-4" /> Add Expense
                 </Link>
@@ -240,7 +240,7 @@ export default function FinancePage() {
               {!isFetching && stats && (
                 <>
                   {/* Stats Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
                     <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Delivered Revenue</p>
@@ -303,8 +303,10 @@ export default function FinancePage() {
                       <div className="p-4 border-b border-gray-200 dark:border-gray-700">
                         <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Monthly Financial Summary</h3>
                       </div>
-                      <div className="overflow-x-auto touch-pan-x">
-                        <table className="min-w-[800px] w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                           <thead className="bg-gray-50 dark:bg-gray-900/50">
                             <tr>
                               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Month</th>
@@ -333,6 +335,32 @@ export default function FinancePage() {
                           </tbody>
                         </table>
                       </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                        {stats.monthlySummary.map((m: any) => (
+                          <div key={m.month} className="p-4 space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="font-bold text-gray-900 dark:text-white">{m.month}</span>
+                              <span className={`text-sm font-bold ${m.profit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                                Profit: Rs {m.profit.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-y-2 text-sm">
+                              <div className="text-gray-500 dark:text-gray-400">Revenue</div>
+                              <div className="text-right text-gray-900 dark:text-white font-medium">Rs {m.deliveredRevenue.toLocaleString()}</div>
+                              <div className="text-gray-500 dark:text-gray-400">Product Cost</div>
+                              <div className="text-right text-gray-900 dark:text-white font-medium">Rs {m.productCost.toLocaleString()}</div>
+                              <div className="text-gray-500 dark:text-gray-400">Expenses</div>
+                              <div className="text-right text-gray-900 dark:text-white font-medium">Rs {m.expenses.toLocaleString()}</div>
+                              <div className="text-gray-500 dark:text-gray-400">Delivery Fees</div>
+                              <div className="text-right text-gray-900 dark:text-white font-medium">Rs {m.deliveryFees.toLocaleString()}</div>
+                              <div className="text-gray-500 dark:text-gray-400">Return Loss</div>
+                              <div className="text-right text-red-500 dark:text-red-400 font-medium">Rs {m.returnLoss.toLocaleString()}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -342,8 +370,9 @@ export default function FinancePage() {
                       <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Filtered Expenses</h3>
                     </div>
 
-                    <div className="overflow-x-auto touch-pan-x">
-                      <table className="min-w-[600px] w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-900/50">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
@@ -383,6 +412,34 @@ export default function FinancePage() {
                           )}
                         </tbody>
                       </table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                      {expenses.length === 0 ? (
+                        <div className="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                          <Receipt className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                          <p className="px-4 break-words">No expenses found in this period.</p>
+                        </div>
+                      ) : (
+                        expenses.map((e) => (
+                          <div key={e._id} className="p-4 space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900 dark:text-white break-words">{e.title}</div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(e.date || e.createdAt).toLocaleDateString()}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-gray-900 dark:text-white">Rs {e.amount.toLocaleString()}</div>
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                  {e.category}
+                                </span>
+                              </div>
+                            </div>
+                            {e.notes && <div className="text-xs text-gray-500 dark:text-gray-400 italic break-words">"{e.notes}"</div>}
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </>

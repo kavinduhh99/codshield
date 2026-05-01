@@ -133,7 +133,7 @@ export default function SettingsPage() {
   if (!session || !session.user) return null;
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-slate-950 font-sans overflow-x-hidden">
+    <div className="flex min-h-screen w-full bg-gray-50 dark:bg-slate-950 font-sans overflow-x-hidden max-w-full">
       <Sidebar
         businessName={(session.user as any)?.businessName}
         userName={session.user?.name}
@@ -142,31 +142,38 @@ export default function SettingsPage() {
 
       <div className="flex flex-1 flex-col pt-14 md:pt-0 md:pl-64">
         {/* Sticky Header with Save Button */}
-        <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 px-4 sm:px-6 md:px-8 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-all">
-           <div>
-             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100 leading-none">Settings</h1>
-             {hasUnsavedChanges && (
-               <div className="flex items-center mt-1.5 text-xs text-yellow-600 dark:text-yellow-500 font-medium">
-                 <AlertCircle className="h-3.5 w-3.5 mr-1" /> Unsaved changes
-               </div>
-             )}
-           </div>
-           
-           <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-             {saveMessage && (
-               <span className={`text-xs flex items-center ${saveMessage.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
-                 {saveMessage.type === "success" ? <CheckCircle className="h-3.5 w-3.5 mr-1" /> : <XCircle className="h-3.5 w-3.5 mr-1" />}
-                 {saveMessage.text}
-               </span>
-             )}
-             <button
-               onClick={handleSave}
-               disabled={!hasUnsavedChanges || isSaving || isLoading}
-               className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
-             >
-               {isSaving ? <Loader2 className="animate-spin h-4 w-4"/> : <><Save className="-ml-1 mr-2 h-4 w-4"/> Save</>}
-             </button>
-           </div>
+        <div className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800 px-4 sm:px-6 md:px-8 py-4 transition-all">
+          <div className="flex flex-row justify-between items-center gap-4">
+             <div>
+               <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-slate-100 leading-none">Settings</h1>
+               {hasUnsavedChanges && (
+                 <div className="hidden sm:flex items-center mt-1.5 text-xs text-yellow-600 dark:text-yellow-500 font-medium">
+                   <AlertCircle className="h-3.5 w-3.5 mr-1" /> Unsaved changes
+                 </div>
+               )}
+             </div>
+             
+             <div className="flex items-center gap-4">
+               {saveMessage && (
+                 <span className={`hidden md:flex text-xs items-center ${saveMessage.type === "success" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                   {saveMessage.type === "success" ? <CheckCircle className="h-3.5 w-3.5 mr-1" /> : <XCircle className="h-3.5 w-3.5 mr-1" />}
+                   {saveMessage.text}
+                 </span>
+               )}
+               <button
+                 onClick={handleSave}
+                 disabled={!hasUnsavedChanges || isSaving || isLoading}
+                 className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
+               >
+                 {isSaving ? <Loader2 className="animate-spin h-4 w-4"/> : <><Save className="-ml-1 mr-2 h-4 w-4"/> Save</>}
+               </button>
+             </div>
+          </div>
+          {hasUnsavedChanges && (
+            <div className="flex sm:hidden items-center mt-2 text-[10px] text-yellow-600 dark:text-yellow-500 font-medium bg-yellow-50 dark:bg-yellow-900/20 px-2 py-0.5 rounded w-fit">
+              <AlertCircle className="h-3 w-3 mr-1" /> Unsaved changes
+            </div>
+          )}
         </div>
 
         <main className="flex-1 overflow-y-auto">
@@ -186,60 +193,62 @@ export default function SettingsPage() {
                 <div className="flex flex-col md:flex-row gap-8">
                   {/* Tabs Navigation */}
                   <div className="w-full md:w-64 flex-shrink-0">
-                    <nav className="flex flex-row md:flex-col overflow-x-auto touch-pan-x md:overflow-x-visible pb-2 md:pb-0 space-x-1 md:space-x-0 md:space-y-1 no-scrollbar">
-                      {tabs.map((tab) => {
-                        const Icon = tab.icon;
-                        const isActive = activeTab === tab.id;
-                        return (
-                          <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center flex-shrink-0 px-3 py-2.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                              isActive 
-                                ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
-                                : "text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
-                            }`}
-                          >
-                            <Icon className={`flex-shrink-0 -ml-1 mr-3 h-5 w-5 ${isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
-                            <span>{tab.label}</span>
-                          </button>
-                        );
-                      })}
-                    </nav>
+                    <div className="w-full overflow-x-auto touch-pan-x no-scrollbar">
+                      <nav className="flex flex-row md:flex-col min-w-max md:min-w-0 pb-2 md:pb-0 space-x-1 md:space-x-0 md:space-y-1">
+                        {tabs.map((tab) => {
+                          const Icon = tab.icon;
+                          const isActive = activeTab === tab.id;
+                          return (
+                            <button
+                              key={tab.id}
+                              onClick={() => setActiveTab(tab.id)}
+                              className={`flex items-center shrink-0 px-4 py-2.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                                isActive 
+                                  ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" 
+                                  : "text-gray-700 hover:bg-gray-50 dark:text-slate-300 dark:hover:bg-slate-800/50"
+                              }`}
+                            >
+                              <Icon className={`flex-shrink-0 -ml-1 mr-3 h-5 w-5 ${isActive ? "text-blue-700 dark:text-blue-400" : "text-gray-400 dark:text-slate-500"}`} />
+                              <span>{tab.label}</span>
+                            </button>
+                          );
+                        })}
+                      </nav>
+                    </div>
                   </div>
 
                   {/* Tab Content */}
-                  <div className="flex-1 bg-white dark:bg-slate-900 shadow-sm border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden">
+                  <div className="flex-1 bg-white dark:bg-slate-900 shadow-sm border border-gray-100 dark:border-slate-800 rounded-xl overflow-hidden min-w-0">
                     
                     {/* Business Profile */}
                     {activeTab === "business" && (
-                      <div className="p-6 sm:p-8 space-y-6">
+                      <div className="p-4 sm:p-8 space-y-6">
                         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Business Profile</h2>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Business Name</label>
-                            <input type="text" value={settings.businessProfile.businessName} onChange={e => updateSection("businessProfile", "businessName", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.businessProfile.businessName} onChange={e => updateSection("businessProfile", "businessName", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Owner Name</label>
-                            <input type="text" value={settings.businessProfile.ownerName} onChange={e => updateSection("businessProfile", "ownerName", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.businessProfile.ownerName} onChange={e => updateSection("businessProfile", "ownerName", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Business Phone</label>
-                            <input type="text" value={settings.businessProfile.businessPhone} onChange={e => updateSection("businessProfile", "businessPhone", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.businessProfile.businessPhone} onChange={e => updateSection("businessProfile", "businessPhone", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Business Email</label>
-                            <input type="email" value={settings.businessProfile.businessEmail} onChange={e => updateSection("businessProfile", "businessEmail", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="email" value={settings.businessProfile.businessEmail} onChange={e => updateSection("businessProfile", "businessEmail", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
-                          <div className="sm:col-span-2">
+                          <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Business Address</label>
-                            <textarea rows={3} value={settings.businessProfile.businessAddress} onChange={e => updateSection("businessProfile", "businessAddress", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <textarea rows={3} value={settings.businessProfile.businessAddress} onChange={e => updateSection("businessProfile", "businessAddress", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
-                          <div className="sm:col-span-2">
+                          <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Logo URL</label>
-                            <input type="text" placeholder="https://example.com/logo.png" value={settings.businessProfile.logoUrl} onChange={e => updateSection("businessProfile", "logoUrl", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" placeholder="https://example.com/logo.png" value={settings.businessProfile.logoUrl} onChange={e => updateSection("businessProfile", "logoUrl", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                             <p className="mt-1 text-xs text-gray-500 dark:text-slate-400">Provide a direct URL to your business logo for invoices and waybills.</p>
                           </div>
                         </div>
@@ -248,29 +257,29 @@ export default function SettingsPage() {
 
                     {/* Invoice Settings */}
                     {activeTab === "invoice" && (
-                      <div className="p-6 sm:p-8 space-y-6">
+                      <div className="p-4 sm:p-8 space-y-6">
                         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Invoice Settings</h2>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Invoice Prefix</label>
-                            <input type="text" value={settings.invoiceSettings.invoicePrefix} onChange={e => updateSection("invoiceSettings", "invoicePrefix", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.invoiceSettings.invoicePrefix} onChange={e => updateSection("invoiceSettings", "invoicePrefix", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Starting Number</label>
-                            <input type="number" value={settings.invoiceSettings.invoiceStartNumber} onChange={e => updateSection("invoiceSettings", "invoiceStartNumber", parseInt(e.target.value) || 0)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="number" value={settings.invoiceSettings.invoiceStartNumber} onChange={e => updateSection("invoiceSettings", "invoiceStartNumber", parseInt(e.target.value) || 0)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Currency Code</label>
-                            <input type="text" value={settings.invoiceSettings.currency} onChange={e => updateSection("invoiceSettings", "currency", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.invoiceSettings.currency} onChange={e => updateSection("invoiceSettings", "currency", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
-                          <div className="flex items-center mt-6">
+                          <div className="flex items-center md:mt-6">
                             <input id="showLogo" type="checkbox" checked={settings.invoiceSettings.showLogoOnInvoice} onChange={e => updateSection("invoiceSettings", "showLogoOnInvoice", e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-800" />
                             <label htmlFor="showLogo" className="ml-2 block text-sm text-gray-900 dark:text-slate-300">Show Logo on Invoice</label>
                           </div>
-                          <div className="sm:col-span-2">
+                          <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Invoice Notes / Footer Text</label>
-                            <textarea rows={3} value={settings.invoiceSettings.invoiceNotes} onChange={e => updateSection("invoiceSettings", "invoiceNotes", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <textarea rows={3} value={settings.invoiceSettings.invoiceNotes} onChange={e => updateSection("invoiceSettings", "invoiceNotes", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                         </div>
                       </div>
@@ -278,30 +287,30 @@ export default function SettingsPage() {
 
                     {/* Waybill Settings */}
                     {activeTab === "waybill" && (
-                      <div className="p-6 sm:p-8 space-y-6">
+                      <div className="p-4 sm:p-8 space-y-6">
                         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Waybill Settings</h2>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Default Courier</label>
-                            <input type="text" value={settings.waybillSettings.defaultCourier} onChange={e => updateSection("waybillSettings", "defaultCourier", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.waybillSettings.defaultCourier} onChange={e => updateSection("waybillSettings", "defaultCourier", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
-                          <div></div>
+                          <div className="hidden md:block"></div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Sender Name</label>
-                            <input type="text" value={settings.waybillSettings.senderName} onChange={e => updateSection("waybillSettings", "senderName", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.waybillSettings.senderName} onChange={e => updateSection("waybillSettings", "senderName", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Sender Phone</label>
-                            <input type="text" value={settings.waybillSettings.senderPhone} onChange={e => updateSection("waybillSettings", "senderPhone", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.waybillSettings.senderPhone} onChange={e => updateSection("waybillSettings", "senderPhone", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
-                          <div className="sm:col-span-2">
+                          <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Pickup Address</label>
-                            <textarea rows={3} value={settings.waybillSettings.pickupAddress} onChange={e => updateSection("waybillSettings", "pickupAddress", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <textarea rows={3} value={settings.waybillSettings.pickupAddress} onChange={e => updateSection("waybillSettings", "pickupAddress", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
-                          <div className="sm:col-span-2">
+                          <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Default Delivery Notes</label>
-                            <input type="text" value={settings.waybillSettings.defaultDeliveryNotes} onChange={e => updateSection("waybillSettings", "defaultDeliveryNotes", e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="text" value={settings.waybillSettings.defaultDeliveryNotes} onChange={e => updateSection("waybillSettings", "defaultDeliveryNotes", e.target.value)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                           </div>
                         </div>
                       </div>
@@ -309,17 +318,17 @@ export default function SettingsPage() {
 
                     {/* Order Settings */}
                     {activeTab === "order" && (
-                      <div className="p-6 sm:p-8 space-y-6">
+                      <div className="p-4 sm:p-8 space-y-6">
                         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Order Settings</h2>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Default Delivery Fee</label>
                             <div className="mt-1 relative rounded-md shadow-sm">
                               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <span className="text-gray-500 sm:text-sm">Rs.</span>
                               </div>
-                              <input type="number" value={settings.orderSettings.defaultDeliveryFee} onChange={e => updateSection("orderSettings", "defaultDeliveryFee", parseFloat(e.target.value) || 0)} className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md dark:border-slate-700 dark:bg-slate-800" />
+                              <input type="number" value={settings.orderSettings.defaultDeliveryFee} onChange={e => updateSection("orderSettings", "defaultDeliveryFee", parseFloat(e.target.value) || 0)} className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 sm:text-sm border-gray-300 rounded-md dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                             </div>
                           </div>
                           <div>
@@ -331,7 +340,7 @@ export default function SettingsPage() {
                             </select>
                           </div>
                           
-                          <div className="sm:col-span-2 space-y-4 mt-2">
+                          <div className="md:col-span-2 space-y-4 mt-2">
                             <div className="flex items-start">
                               <div className="flex items-center h-5">
                                 <input id="autoReduce" type="checkbox" checked={settings.orderSettings.autoReduceStock} onChange={e => updateSection("orderSettings", "autoReduceStock", e.target.checked)} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded dark:border-slate-700 dark:bg-slate-800" />
@@ -357,22 +366,22 @@ export default function SettingsPage() {
 
                     {/* Shield Settings */}
                     {activeTab === "shield" && (
-                      <div className="p-6 sm:p-8 space-y-6">
+                      <div className="p-4 sm:p-8 space-y-6">
                         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Risk Intelligence Settings</h2>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Warning Risk Threshold</label>
-                            <input type="number" value={settings.shieldSettings.warningRiskThreshold} onChange={e => updateSection("shieldSettings", "warningRiskThreshold", parseInt(e.target.value) || 0)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="number" value={settings.shieldSettings.warningRiskThreshold} onChange={e => updateSection("shieldSettings", "warningRiskThreshold", parseInt(e.target.value) || 0)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                             <p className="mt-1 text-xs text-gray-500">Orders above this score show a warning indicator.</p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">High Risk Threshold</label>
-                            <input type="number" value={settings.shieldSettings.highRiskThreshold} onChange={e => updateSection("shieldSettings", "highRiskThreshold", parseInt(e.target.value) || 0)} className="mt-1 block w-full rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" />
+                            <input type="number" value={settings.shieldSettings.highRiskThreshold} onChange={e => updateSection("shieldSettings", "highRiskThreshold", parseInt(e.target.value) || 0)} className="mt-1 block w-full min-w-0 rounded-md border-gray-300 dark:border-slate-700 dark:bg-slate-800 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm dark:text-white" />
                             <p className="mt-1 text-xs text-gray-500">Orders above this score are flagged as high risk.</p>
                           </div>
                           
-                          <div className="sm:col-span-2 mt-2">
+                          <div className="md:col-span-2 mt-2">
                             <div className="flex items-start">
                               <div className="flex items-center h-5">
                                 <input id="highRiskConfirm" type="checkbox" checked={settings.shieldSettings.showHighRiskConfirmation} onChange={e => updateSection("shieldSettings", "showHighRiskConfirmation", e.target.checked)} className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded dark:border-slate-700 dark:bg-slate-800" />
@@ -389,7 +398,7 @@ export default function SettingsPage() {
 
                     {/* Account Settings */}
                     {activeTab === "account" && (
-                      <div className="p-6 sm:p-8 space-y-6">
+                      <div className="p-4 sm:p-8 space-y-6">
                         <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Account Security</h2>
                         
                         <div className="bg-gray-50 dark:bg-slate-800/50 rounded-lg p-4 border border-gray-200 dark:border-slate-700">

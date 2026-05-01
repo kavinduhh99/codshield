@@ -11,6 +11,7 @@ declare module "next-auth" {
     status?: string;
     isEmailVerified?: boolean;
     createdAt?: Date;
+    googleId?: string;
   }
 
   interface Session {
@@ -26,6 +27,7 @@ declare module "next-auth" {
       status?: string;
       isEmailVerified?: boolean;
       createdAt?: Date;
+      googleId?: string;
     };
   }
 }
@@ -39,5 +41,6 @@ declare module "next-auth/jwt" {
     status?: string;
     isEmailVerified?: boolean;
     createdAt?: Date;
+    googleId?: string;
   }
 }
