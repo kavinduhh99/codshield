@@ -65,22 +65,62 @@ export async function POST(req: Request) {
     }
 
     const checkPhoneRisk = async (p?: string) => {
-      if (!p) return { score: 0, failedOrders: 0, successOrders: 0, totalOrders: 0, lastOrderDate: null };
+      if (!p) return { 
+        score: 0, failedOrders: 0, successOrders: 0, totalOrders: 0, 
+        lastOrderDate: null, historicalDelivered: 0, historicalReturned: 0, 
+        hasHistorical: false 
+      };
 
       const normalizedPhone = normalizePhone(p);
 
       // ── Step 1: Aggregate counters from Intelligence ──
       const intel = await Intelligence.findOne({ phone: normalizedPhone });
-      const totalOrders = intel?.totalOrders ?? 0;
-      const failedOrders = intel?.failedOrders ?? 0;
-      const successOrders = intel?.successOrders ?? 0;
+      let totalOrders = intel?.totalOrders ?? 0;
+      let failedOrders = intel?.failedOrders ?? 0;
+      let successOrders = intel?.successOrders ?? 0;
       const isBlacklisted = (intel as any)?.isBlacklisted ?? false;
 
-      if (isBlacklisted) return { score: 100, failedOrders, successOrders, totalOrders, lastOrderDate: intel?.lastOrderDate || null };
-      if (totalOrders === 0) return { score: 0, failedOrders, successOrders, totalOrders, lastOrderDate: intel?.lastOrderDate || null };
+      if (isBlacklisted) return { 
+        score: 100, failedOrders, successOrders, totalOrders, 
+        lastOrderDate: intel?.lastOrderDate || null,
+        historicalDelivered: 0, historicalReturned: 0, hasHistorical: false
+      };
+
+      // ── Step 1.5: Aggregate counters from CodRiskSeed ──
+      // Use global seeds + seeds assigned to this business
+      const seedQuery: any = { 
+        phone: { $in: getPhoneVariants(normalizedPhone) },
+        $or: [
+          { isGlobal: true },
+        ]
+      };
+      
+      if (session?.user?.id) {
+        seedQuery.$or.push({ assignedBusinessId: new (await import("mongoose")).default.Types.ObjectId(session.user.id) });
+      }
+
+      const CodRiskSeed = (await import("@/models/CodRiskSeed")).default;
+      const seeds = await CodRiskSeed.find(seedQuery);
+      
+      let historicalDelivered = 0;
+      let historicalReturned = 0;
+      
+      for (const seed of seeds) {
+        historicalDelivered += seed.deliveredCount || 0;
+        historicalReturned += seed.returnedCount || 0;
+      }
+
+      totalOrders += (historicalDelivered + historicalReturned);
+      failedOrders += historicalReturned;
+      successOrders += historicalDelivered;
+
+      if (totalOrders === 0) return { 
+        score: 0, failedOrders, successOrders, totalOrders, 
+        lastOrderDate: intel?.lastOrderDate || null,
+        historicalDelivered, historicalReturned, hasHistorical: (historicalDelivered + historicalReturned) > 0
+      };
 
       // ── Step 2: Fetch individual returned orders for weighted scoring ──
-      // Order docs may store raw phone; search all normalized variants.
       const variants = getPhoneVariants(normalizedPhone);
       const returnedOrders = await Order.find({
         phone: { $in: variants },
@@ -90,24 +130,25 @@ export async function POST(req: Request) {
       const now = Date.now();
       let weightedReturns = 0;
 
+      // Real orders weighted logic
       for (const order of returnedOrders) {
         const reason = order.returnReason as string | undefined;
-
-        // 'Courier Issue' returns are excluded from risk scoring entirely
         if (reason === "Courier Issue") continue;
-
-        // Time decay: returns within the last 30 days carry 20% extra weight
         const isRecent = now - new Date(order.createdAt).getTime() < THIRTY_DAYS_MS;
         const timeWeight = isRecent ? 1.2 : 1.0;
-
-        // Reason multiplier: deliberate refusals are 1.5× more significant
         const reasonMultiplier = reason === "Customer Refused" ? 1.5 : 1.0;
-
         weightedReturns += timeWeight * reasonMultiplier;
       }
 
+      // Add historical returns with flat weight of 1.0
+      weightedReturns += historicalReturned;
+
       const score = Math.min(100, Math.round((weightedReturns / totalOrders) * 100));
-      return { score, failedOrders, successOrders, totalOrders, lastOrderDate: intel?.lastOrderDate || null };
+      return { 
+        score, failedOrders, successOrders, totalOrders, 
+        lastOrderDate: intel?.lastOrderDate || null,
+        historicalDelivered, historicalReturned, hasHistorical: (historicalDelivered + historicalReturned) > 0
+      };
     };
 
     const risk1 = await checkPhoneRisk(phone);
@@ -138,6 +179,9 @@ export async function POST(req: Request) {
       successOrders,
       totalOrders,
       lastOrderDate,
+      historicalDelivered: risk1.historicalDelivered + risk2.historicalDelivered,
+      historicalReturned: risk1.historicalReturned + risk2.historicalReturned,
+      hasHistorical: risk1.hasHistorical || risk2.hasHistorical,
       originalPhone: phone,
       normalizedPhone: phone ? normalizePhone(phone) : null,
       phone2: phone2 || null,

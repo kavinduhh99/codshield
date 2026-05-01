@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useSession } from "next-auth/react";
-import { ShieldAlert, AlertTriangle, Phone, MapPin, User as UserIcon, Loader2, Building, Calendar, CheckCircle, PlusCircle, Search, Package, Tag, X, Trash2, Truck } from "lucide-react";
+import { ShieldAlert, AlertTriangle, Phone, MapPin, User as UserIcon, Loader2, Building, Calendar, CheckCircle, PlusCircle, Search, Package, Tag, X, Trash2, Truck, Database, Info } from "lucide-react";
 import { BulkUploadCard } from "@/components/orders/BulkUploadCard";
 
 interface OrderItem {
@@ -75,6 +75,9 @@ export default function AddOrderPage() {
   const [riskFailedOrders, setRiskFailedOrders] = useState<number>(0);
   const [riskTotalOrders, setRiskTotalOrders] = useState<number>(0);
   const [riskLastOrderDate, setRiskLastOrderDate] = useState<string | null>(null);
+  const [historicalDelivered, setHistoricalDelivered] = useState<number>(0);
+  const [historicalReturned, setHistoricalReturned] = useState<number>(0);
+  const [hasHistorical, setHasHistorical] = useState<boolean>(false);
   const [checkingRisk, setCheckingRisk] = useState(false);
 
   // Fetch products
@@ -110,6 +113,9 @@ export default function AddOrderPage() {
           setRiskFailedOrders(data.failedOrders ?? 0);
           setRiskTotalOrders(data.totalOrders ?? 0);
           setRiskLastOrderDate(data.lastOrderDate ?? null);
+          setHistoricalDelivered(data.historicalDelivered ?? 0);
+          setHistoricalReturned(data.historicalReturned ?? 0);
+          setHasHistorical(data.hasHistorical ?? false);
         }
       } catch (err) {
         console.error("Risk check failed:", err);
@@ -711,6 +717,11 @@ export default function AddOrderPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
+                          {hasHistorical && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-[10px] font-black uppercase text-blue-500 tracking-widest mb-2">
+                              <Database className="h-3 w-3" /> Historical Data Included
+                            </div>
+                          )}
                           <div className={`p-4 rounded-xl border ${riskScore > 70 ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : riskScore > 30 ? 'bg-orange-50 border-orange-200 dark:bg-orange-900/20 dark:border-orange-800' : 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'}`}>
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Risk Level</span>
@@ -747,6 +758,27 @@ export default function AddOrderPage() {
                               <span className="block text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last Order</span>
                             </div>
                           </div>
+
+                          {hasHistorical && (
+                            <div className="pt-2 border-t border-gray-100 dark:border-gray-700 mt-2">
+                              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                <Info className="h-2.5 w-2.5" /> Historical Breakdown
+                              </p>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 p-1.5 rounded flex justify-between">
+                                  <span>Delivered:</span>
+                                  <span className="text-green-600 font-bold">{historicalDelivered}</span>
+                                </div>
+                                <div className="text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 p-1.5 rounded flex justify-between">
+                                  <span>Returned:</span>
+                                  <span className="text-red-600 font-bold">{historicalReturned}</span>
+                                </div>
+                              </div>
+                              <p className="text-[8px] text-gray-400 italic mt-2">
+                                Historical data is used only for COD risk calculation and does not affect finance.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

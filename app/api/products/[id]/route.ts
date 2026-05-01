@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import dbConnect from "@/lib/db";
 import Product from "@/models/Product";
+import ProductCategory from "@/models/ProductCategory";
 import { checkSubscription } from "@/lib/subscription";
+import mongoose from "mongoose";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,6 +17,21 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
     const { name, sku, category, costPrice, sellingPrice, stock, lowStockAlert, active } = body;
+
+    // Handle Category Creation
+    if (category && category !== "General") {
+      const normalizedCat = category.trim();
+      const existingCat = await ProductCategory.findOne({ 
+        userId: (session as any).user.id, 
+        name: { $regex: new RegExp(`^${normalizedCat}$`, "i") } 
+      });
+      if (!existingCat) {
+        await ProductCategory.create({
+          userId: new mongoose.Types.ObjectId((session as any).user.id),
+          name: normalizedCat
+        });
+      }
+    }
 
     const updatedProduct = await Product.findOneAndUpdate(
       { _id: id, userId: (session as any).user.id },

@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useSession } from "next-auth/react";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown, Check, Plus } from "lucide-react";
 
 function ProductForm() {
   const router = useRouter();
@@ -26,11 +26,29 @@ function ProductForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Categories State
+  const [categories, setCategories] = useState<any[]>([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [categorySearch, setCategorySearch] = useState("");
+
   useEffect(() => {
-    if (id && status === "authenticated") {
-      fetchProduct();
+    if (status === "authenticated") {
+      fetchCategories();
+      if (id) fetchProduct();
     }
   }, [id, status]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch("/api/product-categories");
+      if (res.ok) {
+        const data = await res.json();
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
 
   const fetchProduct = async () => {
     try {
@@ -137,14 +155,82 @@ function ProductForm() {
                         />
                       </div>
 
-                      <div>
+                       <div className="relative">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-                        <input
-                          type="text"
-                          className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3"
-                          value={formData.category}
-                          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                        />
+                        <div className="relative mt-1">
+                          <input
+                            type="text"
+                            className="block w-full rounded-md border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white px-3"
+                            placeholder="Select or type a category..."
+                            value={formData.category}
+                            onFocus={() => setShowCategoryDropdown(true)}
+                            onChange={(e) => {
+                              setFormData({ ...formData, category: e.target.value });
+                              setCategorySearch(e.target.value);
+                              setShowCategoryDropdown(true);
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="absolute inset-y-0 right-0 flex items-center pr-2"
+                            onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                          >
+                            <ChevronDown className="h-4 w-4 text-gray-400" />
+                          </button>
+                        </div>
+
+                        {showCategoryDropdown && (
+                          <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white dark:bg-gray-800 py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm border border-gray-200 dark:border-gray-700">
+                            {categories
+                              .filter(c => c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                              .map((cat) => (
+                                <button
+                                  key={cat._id}
+                                  type="button"
+                                  className="relative w-full cursor-default select-none py-2 pl-3 pr-9 text-left text-gray-900 dark:text-white hover:bg-blue-600 hover:text-white"
+                                  onClick={() => {
+                                    setFormData({ ...formData, category: cat.name });
+                                    setCategorySearch("");
+                                    setShowCategoryDropdown(false);
+                                  }}
+                                >
+                                  <span className="block truncate">{cat.name}</span>
+                                  {formData.category === cat.name && (
+                                    <span className="absolute inset-y-0 right-0 flex items-center pr-4">
+                                      <Check className="h-4 w-4" aria-hidden="true" />
+                                    </span>
+                                  )}
+                                </button>
+                              ))}
+                            
+                            {formData.category && !categories.some(c => c.name.toLowerCase() === formData.category.toLowerCase()) && (
+                              <button
+                                type="button"
+                                className="relative w-full cursor-default select-none py-2 pl-3 pr-9 text-left text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white"
+                                onClick={() => setShowCategoryDropdown(false)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Plus className="h-4 w-4" />
+                                  <span className="block truncate font-bold uppercase tracking-widest text-[10px]">Create category: {formData.category}</span>
+                                </div>
+                              </button>
+                            )}
+
+                            {categories.length === 0 && !formData.category && (
+                              <div className="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                                No categories yet. Type one to create it.
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Backdrop to close dropdown */}
+                        {showCategoryDropdown && (
+                          <div 
+                            className="fixed inset-0 z-0" 
+                            onClick={() => setShowCategoryDropdown(false)}
+                          />
+                        )}
                       </div>
 
                       <div>

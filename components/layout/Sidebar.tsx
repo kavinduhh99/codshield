@@ -21,6 +21,8 @@ import {
   Settings,
   PlusCircle,
   Banknote,
+  Database,
+  LifeBuoy
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 
@@ -39,6 +41,7 @@ const businessLinks = [
   { href: "/dashboard/finance", label: "Finance", icon: DollarSign },
   { href: "/dashboard/receivables", label: "Receivables", icon: Banknote },
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+  { href: "/dashboard/support", label: "Support", icon: LifeBuoy },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -48,6 +51,8 @@ const adminLinks = [
   { href: "/admin/subscriptions", label: "Subscriptions", icon: CreditCard },
   { href: "/admin/payments", label: "Payments", icon: Banknote },
   { href: "/admin/analytics", label: "Platform Analytics", icon: Activity },
+  { href: "/admin/cod-risk-data", label: "COD Risk Data", icon: Database },
+  { href: "/admin/support", label: "Support Tickets", icon: LifeBuoy },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -129,6 +134,20 @@ function SidebarContent({
             </p>
           </div>
         </div>
+
+        {!isAdmin && (
+          <Link
+            href="/dashboard/support"
+            className="group mb-2 flex w-full items-center rounded-md px-2 py-2 text-sm font-medium text-blue-400 bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all shadow-lg shadow-blue-500/5"
+          >
+            <LifeBuoy
+              className="mr-3 h-5 w-5 flex-shrink-0 text-blue-400 group-hover:text-white"
+              aria-hidden="true"
+            />
+            Need Help?
+          </Link>
+        )}
+
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           className="group flex w-full items-center rounded-md px-2 py-2 text-sm font-medium text-gray-300 hover:bg-red-600 hover:text-white transition-colors"

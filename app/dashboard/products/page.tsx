@@ -10,6 +10,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { BulkProductUpload } from "@/components/products/BulkProductUpload";
+
 // ── Components ─────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: string; icon: any; color: string }) {
   return (
@@ -32,19 +34,75 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState<any[]>([]);
+  
+  // Pagination State
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProductsCount, setTotalProductsCount] = useState(0);
+  const [stats, setStats] = useState<any>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
-      fetchProducts();
+      fetchCategories();
     }
   }, [status]);
 
-  const fetchProducts = async () => {
+  useEffect(() => {
+    if (status === "authenticated") {
+      const timer = setTimeout(() => {
+        fetchProducts();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [status, page, search, filter, selectedCategory]);
+
+  const fetchCategories = async () => {
     try {
-      const res = await fetch("/api/products");
+      const res = await fetch("/api/product-categories");
       if (res.ok) {
         const data = await res.json();
-        setProducts(data);
+        setCategories(data);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleFilterChange = (val: string) => {
+    setFilter(val);
+    setPage(1);
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setSelectedCategory(val);
+    setPage(1);
+  };
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams({
+        page: String(page),
+        limit: "10",
+        search: search,
+        status: filter,
+        category: selectedCategory
+      });
+      
+      const res = await fetch(`/api/products?${queryParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data.products || []);
+        setTotalPages(data.totalPages || 1);
+        setTotalProductsCount(data.total || 0);
+        setStats(data.stats);
       }
     } catch (err) {
       console.error(err);
@@ -66,81 +124,87 @@ export default function ProductsPage() {
   };
 
   // ── Export Logic ──────────────────────────────────────────────────────────
-  const exportToCSV = (type: "all" | "low-stock") => {
-    const dataToExport = type === "all" 
-      ? products 
-      : products.filter(p => p.stock <= p.lowStockAlert);
-
-    if (dataToExport.length === 0) {
-      alert("No products found to export.");
-      return;
-    }
-
-    const headers = [
-      "Product Name", "SKU", "Category", "Cost Price", "Selling Price", 
-      "Current Stock", "Low Stock Alert Qty", "Stock Status", 
-      "Stock Value Cost", "Stock Value Selling", "Active Status"
-    ];
-
-    const rows = dataToExport.map(p => {
-      const stockStatus = p.stock <= 0 ? "Out of Stock" : (p.stock <= p.lowStockAlert ? "Low Stock" : "In Stock");
-      const stockValueCost = (p.costPrice || 0) * (p.stock || 0);
-      const stockValueSelling = (p.sellingPrice || 0) * (p.stock || 0);
+  const exportToCSV = async (type: "all" | "low-stock") => {
+    try {
+      setLoading(true);
+      // Fetch ALL matching products for export
+      const queryParams = new URLSearchParams({
+        search: search,
+        status: filter,
+        category: selectedCategory
+      });
       
-      return [
-        `"${p.name.replace(/"/g, '""')}"`,
-        `"${p.sku.replace(/"/g, '""')}"`,
-        `"${(p.category || 'General').replace(/"/g, '""')}"`,
-        p.costPrice || 0,
-        p.sellingPrice || 0,
-        p.stock || 0,
-        p.lowStockAlert || 0,
-        `"${stockStatus}"`,
-        stockValueCost,
-        stockValueSelling,
-        p.active ? "Active" : "Inactive"
+      const res = await fetch(`/api/products?${queryParams.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch products for export");
+      
+      const allMatchingProducts = await res.json();
+      
+      const dataToExport = type === "all" 
+        ? allMatchingProducts 
+        : allMatchingProducts.filter((p: any) => p.stock <= p.lowStockAlert);
+
+      if (dataToExport.length === 0) {
+        alert("No products found to export.");
+        return;
+      }
+
+      const headers = [
+        "Product Name", "SKU", "Category", "Cost Price", "Selling Price", 
+        "Current Stock", "Low Stock Alert Qty", "Stock Status", 
+        "Stock Value Cost", "Stock Value Selling", "Active Status"
       ];
-    });
 
-    const csvContent = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    
-    const date = new Date().toISOString().split("T")[0];
-    const filename = type === "all" 
-      ? `bizflow-stock-report-${date}.csv` 
-      : `bizflow-low-stock-report-${date}.csv`;
+      const rows = dataToExport.map((p: any) => {
+        const stockStatus = p.stock <= 0 ? "Out of Stock" : (p.stock <= p.lowStockAlert ? "Low Stock" : "In Stock");
+        const stockValueCost = (p.costPrice || 0) * (p.stock || 0);
+        const stockValueSelling = (p.sellingPrice || 0) * (p.stock || 0);
+        
+        return [
+          `"${p.name.replace(/"/g, '""')}"`,
+          `"${p.sku.replace(/"/g, '""')}"`,
+          `"${(p.category || 'General').replace(/"/g, '""')}"`,
+          p.costPrice || 0,
+          p.sellingPrice || 0,
+          p.stock || 0,
+          p.lowStockAlert || 0,
+          `"${stockStatus}"`,
+          stockValueCost,
+          stockValueSelling,
+          p.active ? "Active" : "Inactive"
+        ];
+      });
 
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const csvContent = [headers.join(","), ...rows.map((r: any) => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      
+      const date = new Date().toISOString().split("T")[0];
+      const filename = type === "all" 
+        ? `bizflow-stock-report-${date}.csv` 
+        : `bizflow-low-stock-report-${date}.csv`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export products.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // ── Filter Logic ──────────────────────────────────────────────────────────
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase());
-    
-    let matchesFilter = true;
-    if (filter === "in-stock") matchesFilter = p.stock > p.lowStockAlert;
-    else if (filter === "low-stock") matchesFilter = p.stock <= p.lowStockAlert && p.stock > 0;
-    else if (filter === "out-of-stock") matchesFilter = p.stock <= 0;
-    else if (filter === "active") matchesFilter = p.active === true;
-    else if (filter === "inactive") matchesFilter = p.active === false;
-
-    return matchesSearch && matchesFilter;
-  });
-
   // ── Summary Calculations ──────────────────────────────────────────────────
-  const totalProducts = products.length;
-  const totalStockUnits = products.reduce((acc, p) => acc + (p.stock || 0), 0);
-  const lowStockCount = products.filter(p => p.stock <= p.lowStockAlert && p.stock > 0).length;
-  const outOfStockCount = products.filter(p => p.stock <= 0).length;
-  const totalStockCostValue = products.reduce((acc, p) => acc + ((p.costPrice || 0) * (p.stock || 0)), 0);
-  const totalStockSellingValue = products.reduce((acc, p) => acc + ((p.sellingPrice || 0) * (p.stock || 0)), 0);
+  const totalProducts = stats?.totalProducts || 0;
+  const totalStockUnits = stats?.totalStockUnits || 0;
+  const lowStockCount = stats?.lowStockCount || 0;
+  const outOfStockCount = stats?.outOfStockCount || 0;
+  const totalStockCostValue = stats?.totalStockCostValue || 0;
+  const totalStockSellingValue = stats?.totalStockSellingValue || 0;
 
   if (status === "loading" || loading) {
     return (
@@ -200,6 +264,11 @@ export default function ProductsPage() {
               <StatCard label="Sale Value" value={`Rs ${Math.round(totalStockSellingValue).toLocaleString()}`} icon={BarChart3} color="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400" />
             </div>
 
+            <BulkProductUpload onSuccess={() => {
+              fetchProducts();
+              fetchCategories();
+            }} />
+
             {/* Controls */}
             <div className="bg-white dark:bg-gray-900 shadow-xl rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
               <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
@@ -211,8 +280,8 @@ export default function ProductsPage() {
                     type="text"
                     className="block w-full rounded-xl border border-gray-200 dark:border-gray-800 pl-10 pr-4 py-2.5 text-sm ring-offset-0 focus:ring-2 focus:ring-blue-500 outline-none transition-all bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white font-medium"
                     placeholder="Search by name or SKU..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                     value={search}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                   />
                 </div>
                 <div className="flex items-center gap-3 w-full lg:w-auto">
@@ -222,7 +291,7 @@ export default function ProductsPage() {
                   <select
                     className="flex-1 lg:flex-none bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
                     value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
+                    onChange={(e) => handleFilterChange(e.target.value)}
                   >
                     <option value="all">All Products</option>
                     <option value="in-stock">In Stock</option>
@@ -231,6 +300,17 @@ export default function ProductsPage() {
                     <option value="active">Active Only</option>
                     <option value="inactive">Inactive Only</option>
                   </select>
+
+                  <select
+                    className="flex-1 lg:flex-none bg-gray-50 dark:bg-gray-950 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white text-sm rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-blue-500 outline-none transition-all font-bold"
+                    value={selectedCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map((cat) => (
+                      <option key={cat._id} value={cat.name}>{cat.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </div>
@@ -238,13 +318,13 @@ export default function ProductsPage() {
             <div className="bg-white dark:bg-gray-900 shadow-2xl rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800">
               {/* ── Mobile card list ── */}
               <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
-                {filteredProducts.length === 0 ? (
+                {products.length === 0 ? (
                   <div className="px-4 py-20 text-center text-gray-500 dark:text-gray-400">
                     <Box className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-700 mb-4" />
                     <p className="font-bold uppercase tracking-widest text-xs">No products found</p>
                   </div>
                 ) : (
-                  filteredProducts.map((p) => (
+                  products.map((p) => (
                     <div key={p._id} className="p-5 flex flex-col gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
                       <div className="flex items-start justify-between">
                         <div className="min-w-0">
@@ -301,7 +381,7 @@ export default function ProductsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900/20 divide-y divide-gray-100 dark:divide-gray-800/50">
-                    {filteredProducts.length === 0 ? (
+                    {products.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-6 py-24 text-center text-gray-500 dark:text-gray-400">
                           <Box className="mx-auto h-16 w-16 text-gray-200 dark:text-gray-800 mb-4" />
@@ -309,7 +389,7 @@ export default function ProductsPage() {
                         </td>
                       </tr>
                     ) : (
-                      filteredProducts.map((p) => (
+                      products.map((p) => (
                         <tr key={p._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors group">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-3">
@@ -382,6 +462,31 @@ export default function ProductsPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* ── Pagination Controls ── */}
+              {totalPages > 1 && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 italic">
+                    Showing Page {page} of {totalPages} <span className="mx-2 text-gray-300 dark:text-gray-700">|</span> Total {totalProductsCount} products
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <button
+                      disabled={page === 1}
+                      onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-xs font-black uppercase tracking-widest text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      disabled={page === totalPages}
+                      onClick={() => setPage(prev => Math.min(totalPages, prev + 1))}
+                      className="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </main>
